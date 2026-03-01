@@ -1,14 +1,37 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
-generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
-}
-
 datasource db {
   provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Document {
+  id               String     @id @default(cuid())
+  ownerId          String
+  title            String
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  latestRevisionId String?    @unique
+  latestRevision   Revision?  @relation("LatestRevision", fields: [latestRevisionId], references: [id])
+
+  revisions        Revision[] @relation("DocumentRevisions")
+
+  @@index([ownerId])
+}
+
+model Revision {
+  id             String    @id @default(cuid())
+  documentId     String
+  createdAt      DateTime  @default(now())
+  revisionNumber Int
+  content        String
+  createdBy      String
+
+  document       Document  @relation("DocumentRevisions", fields: [documentId], references: [id], onDelete: Cascade)
+  latestOf       Document? @relation("LatestRevision")
+
+  @@unique([documentId, revisionNumber])
+  @@index([documentId, createdAt])
 }
