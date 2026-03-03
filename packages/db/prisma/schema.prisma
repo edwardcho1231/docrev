@@ -14,7 +14,7 @@ model Document {
   updatedAt        DateTime   @updatedAt
 
   latestRevisionId String?    @unique
-  latestRevision   Revision?  @relation("LatestRevision", fields: [latestRevisionId], references: [id])
+  latestRevision   Revision?  @relation("LatestRevision", fields: [id, latestRevisionId], references: [documentId, id])
 
   revisions        Revision[] @relation("DocumentRevisions")
 
@@ -32,6 +32,7 @@ model Revision {
   document       Document  @relation("DocumentRevisions", fields: [documentId], references: [id], onDelete: Cascade)
   latestOf       Document? @relation("LatestRevision")
 
+  @@unique([documentId, id])
   @@unique([documentId, revisionNumber])
   @@index([documentId, createdAt])
 }

@@ -32,10 +32,13 @@ CREATE INDEX "Document_ownerId_idx" ON "Document"("ownerId");
 CREATE INDEX "Revision_documentId_createdAt_idx" ON "Revision"("documentId", "createdAt");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Revision_documentId_id_key" ON "Revision"("documentId", "id");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Revision_documentId_revisionNumber_key" ON "Revision"("documentId", "revisionNumber");
 
 -- AddForeignKey
-ALTER TABLE "Document" ADD CONSTRAINT "Document_latestRevisionId_fkey" FOREIGN KEY ("latestRevisionId") REFERENCES "Revision"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Document" ADD CONSTRAINT "Document_id_latestRevisionId_fkey" FOREIGN KEY ("id", "latestRevisionId") REFERENCES "Revision"("documentId", "id") ON DELETE NO ACTION ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Revision" ADD CONSTRAINT "Revision_documentId_fkey" FOREIGN KEY ("documentId") REFERENCES "Document"("id") ON DELETE CASCADE ON UPDATE CASCADE;
