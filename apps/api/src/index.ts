@@ -1,11 +1,9 @@
-import dotenv from 'dotenv';
+import 'dotenv/config';
 
 import express from 'express';
 import cors from 'cors';
 import { clerkMiddleware } from '@clerk/express';
 import { apiRouter } from './routes';
-
-dotenv.config();
 
 const app = express();
 

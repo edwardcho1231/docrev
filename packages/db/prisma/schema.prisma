@@ -19,6 +19,7 @@ model Document {
   revisions        Revision[] @relation("DocumentRevisions")
 
   @@index([ownerId])
+  @@unique([id, latestRevisionId])
 }
 
 model Revision {
