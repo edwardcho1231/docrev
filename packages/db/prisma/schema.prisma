@@ -7,11 +7,11 @@ generator client {
 }
 
 model Document {
-  id               String     @id @default(cuid())
+  id               String     @id @default(dbgenerated("gen_random_uuid()::text"))
   ownerId          String
   title            String
   createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  updatedAt        DateTime   @default(now()) @updatedAt
 
   latestRevisionId String?    @unique
   latestRevision   Revision?  @relation("LatestRevision", fields: [id, latestRevisionId], references: [documentId, id])
@@ -23,7 +23,7 @@ model Document {
 }
 
 model Revision {
-  id             String    @id @default(cuid())
+  id             String    @id @default(dbgenerated("gen_random_uuid()::text"))
   documentId     String
   createdAt      DateTime  @default(now())
   revisionNumber Int
