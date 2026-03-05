@@ -1,11 +1,60 @@
 import { Router } from "express";
-import { getAuth } from "@clerk/express";
 import { z } from "zod";
+import { prisma } from "@repo/db";
+
+const createDocumentSchema = z.object({
+  title: z.string().trim().min(1, "Title is required"),
+  content: z.string().trim().min(1, "Content is required"),
+});
 
 export const documentRouter = Router();
 
-documentRouter.get("/", (req, res) => {
-  const { userId } = getAuth(req);
-  if (!userId) return res.status(401).json({error: 'Unauthorized access'})
-  res.json({ userId, documents: [] });
+documentRouter.get("/", async (req, res) => {
+  const userId = res.locals.userId;
+
+  const documents = await prisma.document.findMany({
+    where: { ownerId: userId },
+    include: { latestRevision: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return res.json({ userId, documents });
+});
+
+documentRouter.post('/', async (req, res) => {
+  const userId = res.locals.userId;
+
+  const parsed = createDocumentSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    return res.status(400).json({ error: { code: 'INVALID_DOCUMENT_DATA', message: 'Invalid document data' } });
+  }
+
+  const { title, content } = parsed.data;
+
+  const created = await prisma.$transaction(async (tx: typeof prisma) => {
+    const document = await tx.document.create({
+      data: {
+        ownerId: userId,
+        title,
+      },
+    });
+
+    const revision = await tx.revision.create({
+      data: {
+        documentId: document.id,
+        revisionNumber: 1,
+        content,
+        createdBy: userId,
+      },
+    });
+
+    return tx.document.update({
+      where: { id: document.id },
+      data: { latestRevisionId: revision.id },
+      include: { latestRevision: true },
+    });
+  });
+
+  return res.status(201).json(created);
 });
