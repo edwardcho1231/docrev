@@ -6,6 +6,8 @@
   --app-foreground: var(--slate-12);
   --app-surface: var(--slate-2);
   --app-surface-alt: var(--slate-3);
+  --app-surface-dark: var(--slate-4);
+  --app-surface-darker: var(--slate-5);
   --app-border: var(--slate-6);
   --app-muted: var(--slate-9);
   --app-link-hover: var(--slate-12);

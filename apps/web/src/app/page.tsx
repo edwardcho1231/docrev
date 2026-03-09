@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <main className="mx-auto min-h-[calc(100vh-4.2rem)] max-w-3xl px-6 py-16">
@@ -51,7 +53,25 @@ export default function Home() {
           turning ambiguity into shipping software people can trust.
         </p>
       </section>
-
+      <section className="mt-16 pt-8">
+        <p className="text-sm font-medium text-[var(--app-muted)] uppercase tracking-[0.16em]">
+          Project
+        </p>
+        <h2 className="mt-3 text-xl font-semibold">
+          This site is both a personal portfolio and an experimentation ground for a
+          document collaboration workflow.
+        </h2>
+        <p className="mt-4 max-w-2xl text-base leading-7 text-[var(--app-muted)]">
+          I&apos;m building a focused document platform with Clerk-authenticated access,
+          document versioning, and a clean interface you can evolve over time.
+        </p>
+        <Link
+          href="/documents"
+          className="mt-5 inline-block text-sm font-semibold uppercase tracking-[0.14em] text-[var(--app-muted)] transition-colors hover:text-[var(--app-link-hover)]"
+        >
+          See documents page
+        </Link>
+      </section>
     </main>
   );
 }
