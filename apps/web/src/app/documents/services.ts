@@ -50,3 +50,9 @@ export async function createDocument(payload: CreateDocumentPayload): Promise<Do
     body: JSON.stringify(payload),
   });
 }
+
+export async function deleteDocument(documentId: string): Promise<void> {
+  return requestWithCredentials<void>(`documents/${encodeURIComponent(documentId)}`, {
+    method: "DELETE",
+  });
+}

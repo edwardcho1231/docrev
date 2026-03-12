@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { type Document } from "./types";
-import { createDocument, fetchDocuments } from "./services";
+import { createDocument, deleteDocument, fetchDocuments } from "./services";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadDocuments = useCallback(async () => {
@@ -53,6 +54,20 @@ export default function DocumentsPage() {
       setError(err instanceof Error ? err.message : "Failed to create document");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (documentId: string) => {
+    setDeletingId(documentId);
+    setError(null);
+
+    try {
+      await deleteDocument(documentId);
+      setDocuments((previous) => previous.filter((document) => document.id !== documentId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete document");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -117,9 +132,21 @@ export default function DocumentsPage() {
 
               return (
                 <li key={document.id}>
-                  <Card>
+                    <Card>
                     <CardContent className="p-4">
-                      <p className="text-lg font-medium">{document.title}</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-lg font-medium">{document.title}</p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={deletingId === document.id}
+                          className="border-red-600/70 text-red-300 hover:border-red-500 hover:bg-red-600/15"
+                          onClick={() => handleDelete(document.id)}
+                        >
+                          {deletingId === document.id ? "Deleting..." : "Delete"}
+                        </Button>
+                      </div>
                       <p className="mt-1 text-sm text-[var(--app-muted)]">
                         Updated {updated.toLocaleString()} • Revision {document.latestRevision?.revisionNumber ?? 0}
                       </p>
