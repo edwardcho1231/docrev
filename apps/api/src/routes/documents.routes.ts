@@ -7,6 +7,10 @@ const createDocumentSchema = z.object({
   content: z.string().trim().min(1, "Content is required"),
 });
 
+const deleteDocumentSchema = z.object({
+  id: z.string().uuid("Invalid document ID"),
+});
+
 export const documentRouter = Router();
 
 documentRouter.get("/", async (req, res) => {
@@ -19,6 +23,26 @@ documentRouter.get("/", async (req, res) => {
   });
 
   return res.json({ userId, documents });
+});
+
+documentRouter.delete('/:id', async (req, res) => {
+  const parsed = deleteDocumentSchema.safeParse(req.params);
+
+  if (!parsed.success) {
+    return res.status(400).json({ error: { code: 'INVALID_DOCUMENT_ID', message: 'Invalid document ID' } });
+  }
+
+  const deleted = await prisma.document.deleteMany({
+    where: { id: parsed.data.id, ownerId: res.locals.userId },
+  });
+
+  if (deleted.count === 0) {
+    return res.status(404).json({
+      error: { code: "DOCUMENT_NOT_FOUND", message: "Document not found" },
+    });
+  }
+
+  return res.sendStatus(204);
 });
 
 documentRouter.post('/', async (req, res) => {
