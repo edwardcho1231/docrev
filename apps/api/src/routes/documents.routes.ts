@@ -7,6 +7,11 @@ const createDocumentSchema = z.object({
   content: z.string().trim().min(1, "Content is required"),
 });
 
+const updateDocumentSchema = z.object({
+  title: z.string().trim().min(1, "Title is required"),
+  content: z.string().trim().min(1, "Content is required"),
+});
+
 const deleteDocumentSchema = z.object({
   id: z.string().uuid("Invalid document ID"),
 });
@@ -83,4 +88,64 @@ documentRouter.post('/', async (req, res) => {
   });
 
   return res.status(201).json(created);
+});
+
+documentRouter.put("/:id", async (req, res) => {
+  const parsedId = deleteDocumentSchema.safeParse(req.params);
+
+  if (!parsedId.success) {
+    return res.status(400).json({ error: { code: "INVALID_DOCUMENT_ID", message: "Invalid document ID" } });
+  }
+
+  const parsedPayload = updateDocumentSchema.safeParse(req.body);
+
+  if (!parsedPayload.success) {
+    return res.status(400).json({ error: { code: "INVALID_DOCUMENT_DATA", message: "Invalid document data" } });
+  }
+
+  const { id } = parsedId.data;
+  const { title, content } = parsedPayload.data;
+
+  const userId = res.locals.userId;
+
+  const updated = await prisma.$transaction(async (tx: typeof prisma) => {
+    const document = await tx.document.findFirst({
+      where: { id, ownerId: userId },
+      include: { latestRevision: true },
+    });
+
+    if (!document) {
+      return null;
+    }
+
+    const nextRevisionNumber = document.latestRevision?.revisionNumber ? document.latestRevision.revisionNumber + 1 : 1;
+
+    const revision = await tx.revision.create({
+      data: {
+        documentId: document.id,
+        revisionNumber: nextRevisionNumber,
+        title,
+        content,
+        createdBy: userId,
+      },
+    });
+
+    const updated = await tx.document.update({
+      where: { id: document.id },
+      data: {
+        latestRevisionId: revision.id,
+      },
+      include: { latestRevision: true },
+    });
+
+    return updated;
+  });
+
+  if (!updated) {
+    return res.status(404).json({
+      error: { code: "DOCUMENT_NOT_FOUND", message: "Document not found" },
+    });
+  }
+
+  return res.json(updated);
 });
