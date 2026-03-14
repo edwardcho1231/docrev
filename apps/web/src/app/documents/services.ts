@@ -1,4 +1,9 @@
-import { type CreateDocumentPayload, type DocumentsResponse, type Document } from "./types";
+import {
+  type CreateDocumentPayload,
+  type DocumentsResponse,
+  type Document,
+  type UpdateDocumentPayload,
+} from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -47,6 +52,16 @@ export async function fetchDocuments(): Promise<Document[]> {
 export async function createDocument(payload: CreateDocumentPayload): Promise<Document> {
   return requestWithCredentials<Document>("documents", {
     method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateDocument(
+  documentId: string,
+  payload: UpdateDocumentPayload,
+): Promise<Document> {
+  return requestWithCredentials<Document>(`documents/${encodeURIComponent(documentId)}`, {
+    method: "PUT",
     body: JSON.stringify(payload),
   });
 }

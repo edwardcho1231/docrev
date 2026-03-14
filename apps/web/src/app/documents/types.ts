@@ -17,6 +17,11 @@ export type DocumentsResponse = {
   documents: Document[];
 };
 
+export type UpdateDocumentPayload = {
+  title: string;
+  content: string;
+};
+
 export type CreateDocumentPayload = {
   title: string;
   content: string;

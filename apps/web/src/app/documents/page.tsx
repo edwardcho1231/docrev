@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { type Document } from "./types";
-import { createDocument, deleteDocument, fetchDocuments } from "./services";
+import { createDocument, deleteDocument, fetchDocuments, updateDocument } from "./services";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,14 +30,19 @@ function plainTextSummary(markdown: string, limit = 280) {
 }
 
 export default function DocumentsPage() {
+  type ActiveAction =
+    | { kind: "none" }
+    | { kind: "editing"; documentId: string }
+    | { kind: "deleting"; documentId: string };
+
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<EditorMode>("compose");
+  const [activeAction, setActiveAction] = useState<ActiveAction>({ kind: "none" });
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const { isLoaded, isSignedIn } = useAuth();
 
@@ -71,20 +76,30 @@ export default function DocumentsPage() {
   }, [isLoaded, isSignedIn, loadDocuments]);
 
   const isContentTooLong = content.length > MAX_CONTENT_LENGTH;
-  const isCreateDisabled =
+  const isEditing = activeAction.kind === "editing";
+  const isMutating = submitting || activeAction.kind === "deleting";
+  const isSubmitDisabled =
     !isLoaded ||
     !isSignedIn ||
-    submitting ||
+    isMutating ||
     title.trim().length === 0 ||
     content.trim().length === 0 ||
     isContentTooLong;
 
+  const clearEditor = () => {
+    setTitle("");
+    setContent("");
+    setMode("compose");
+    setActiveAction({ kind: "none" });
+    setError(null);
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (isCreateDisabled) {
+    if (isSubmitDisabled) {
       if (!isSignedIn) {
-        setError("Please sign in to create documents.");
+        setError(isEditing ? "Please sign in to update documents." : "Please sign in to create documents.");
       }
 
       return;
@@ -92,31 +107,67 @@ export default function DocumentsPage() {
 
     setSubmitting(true);
     setError(null);
+    const normalizedTitle = title.trim();
+    const normalizedContent = content.trim();
 
     try {
-      const created = await createDocument({
-        title: title.trim(),
-        content: content.trim(),
-      });
+      if (isEditing && activeAction.kind === "editing") {
+        const updated = await updateDocument(activeAction.documentId, {
+          title: normalizedTitle,
+          content: normalizedContent,
+        });
 
-      setDocuments((previous) => [created, ...previous]);
-      setTitle("");
-      setContent("");
-      setMode("compose");
+        setDocuments((previous) =>
+          previous.map((document) => (document.id === updated.id ? updated : document)),
+        );
+      } else {
+        const created = await createDocument({
+          title: normalizedTitle,
+          content: normalizedContent,
+        });
+
+        setDocuments((previous) => [created, ...previous]);
+      }
+
+      clearEditor();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create document");
+      setError(err instanceof Error ? err.message : `Failed to ${isEditing ? "update" : "create"} document`);
     } finally {
       setSubmitting(false);
     }
   };
 
+  const handleEdit = (document: Document) => {
+    const latest = document.latestRevision;
+
+    if (isMutating) {
+      return;
+    }
+
+    setActiveAction({ kind: "editing", documentId: document.id });
+    setTitle(latest?.title ?? "");
+    setContent(latest?.content ?? "");
+    setMode("compose");
+    setError(null);
+
+    editorRef.current?.focus();
+  };
+
+  const handleCancelEdit = () => {
+    clearEditor();
+  };
+
   const handleDelete = async (documentId: string) => {
+    if (isMutating) {
+      return;
+    }
+
     if (!isSignedIn) {
       setError("Please sign in to delete documents.");
       return;
     }
 
-    setDeletingId(documentId);
+    setActiveAction({ kind: "deleting", documentId });
     setError(null);
 
     try {
@@ -125,7 +176,7 @@ export default function DocumentsPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete document");
     } finally {
-      setDeletingId(null);
+      setActiveAction({ kind: "none" });
     }
   };
 
@@ -135,31 +186,33 @@ export default function DocumentsPage() {
 
       <Card className="mt-8">
         <CardHeader>
-          <CardTitle>Create Document</CardTitle>
+          <CardTitle>{isEditing ? "Update Document" : "Create Document"}</CardTitle>
           <p className="text-sm text-[var(--app-muted)]">
-            Write a title and markdown content, then publish when ready.
+            {isEditing
+              ? "You are updating the selected document. Save creates a new revision."
+              : "Write a title and markdown content, then publish when ready."}
           </p>
         </CardHeader>
 
         <CardContent className="space-y-4">
           <div className="inline-flex rounded border border-[var(--app-border)] p-1">
-            <Button
-              type="button"
-              size="sm"
-              variant={mode === "compose" ? "default" : "outline"}
-              onClick={() => setMode("compose")}
-            >
-              Compose
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={mode === "preview" ? "default" : "outline"}
-              onClick={() => setMode("preview")}
-              className="ml-2"
-            >
-              Preview
-            </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={mode === "compose" ? "default" : "outline"}
+                  onClick={() => setMode("compose")}
+                >
+                  Compose
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={mode === "preview" ? "default" : "outline"}
+                  onClick={() => setMode("preview")}
+                  className="ml-2"
+                >
+                  Preview
+                </Button>
           </div>
 
           {mode === "compose" ? (
@@ -199,9 +252,25 @@ export default function DocumentsPage() {
                 </p>
               </div>
 
-              <Button type="submit" disabled={isCreateDisabled}>
-                {submitting ? "Creating..." : "Create"}
-              </Button>
+                <Button type="submit" disabled={isSubmitDisabled}>
+                  {isEditing
+                    ? submitting
+                      ? "Updating..."
+                      : "Update Document"
+                      : submitting
+                        ? "Creating..."
+                        : "Create Document"}
+                </Button>
+              {isEditing ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={submitting}
+                  onClick={handleCancelEdit}
+                >
+                  Cancel Edit
+                </Button>
+              ) : null}
             </form>
           ) : (
             <div className="space-y-3 rounded-md border border-[var(--app-border)] p-4">
@@ -241,16 +310,29 @@ export default function DocumentsPage() {
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <p className="text-lg font-medium">{documentTitle}</p>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          disabled={deletingId === document.id}
-                          className="border-red-600/70 text-red-300 hover:border-red-500 hover:bg-red-600/15"
-                          onClick={() => handleDelete(document.id)}
-                        >
-                          {deletingId === document.id ? "Deleting..." : "Delete"}
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={isMutating}
+                            onClick={() => handleEdit(document)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={isMutating}
+                            className="border-red-600/70 text-red-300 hover:border-red-500 hover:bg-red-600/15"
+                            onClick={() => handleDelete(document.id)}
+                          >
+                            {activeAction.kind === "deleting" && activeAction.documentId === document.id
+                              ? "Deleting..."
+                              : "Delete"}
+                          </Button>
+                        </div>
                       </div>
                       <p className="mt-1 text-sm text-[var(--app-muted)]">
                         Updated {updated.toLocaleString()} • Revision {document.latestRevision?.revisionNumber ?? 0}
