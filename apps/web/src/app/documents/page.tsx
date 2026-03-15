@@ -1,50 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { type Document } from "./types";
+import { type CreateDocumentPayload, type Document } from "./types";
 import { createDocument, deleteDocument, fetchDocuments, updateDocument } from "./services";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { MarkdownPreview } from "./components/markdown-preview";
-
-type EditorMode = "compose" | "preview";
-const MAX_CONTENT_LENGTH = 5000;
-
-function plainTextSummary(markdown: string, limit = 280) {
-  const withMarkdownRemoved = markdown
-    .replace(/!\[[^\]]*?\]\([^)]+\)/g, "")
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/[#>*_`~>-]/g, "")
-    .replace(/\n+/g, " ")
-    .trim();
-
-  if (!withMarkdownRemoved) {
-    return "No preview content.";
-  }
-
-  return `${withMarkdownRemoved.slice(0, limit)}${withMarkdownRemoved.length > limit ? "…" : ""}`;
-}
-
+import { DocumentCard } from "./components/document-card";
+import { DocumentEditor } from "./components/document-editor";
 export default function DocumentsPage() {
   type ActiveAction =
     | { kind: "none" }
-    | { kind: "editing"; documentId: string }
     | { kind: "deleting"; documentId: string };
 
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<EditorMode>("compose");
+  const [editorDocument, setEditorDocument] = useState<Document | null>(null);
   const [activeAction, setActiveAction] = useState<ActiveAction>({ kind: "none" });
-  const editorRef = useRef<HTMLTextAreaElement>(null);
   const { isLoaded, isSignedIn } = useAuth();
+  const hasActiveUserSession = isSignedIn === true;
 
   const loadDocuments = useCallback(async () => {
     setLoading(true);
@@ -65,92 +40,60 @@ export default function DocumentsPage() {
       return;
     }
 
-    if (!isSignedIn) {
+    if (!hasActiveUserSession) {
       setLoading(false);
       setDocuments([]);
       setError(null);
+      clearEditor();
       return;
     }
 
     loadDocuments();
-  }, [isLoaded, isSignedIn, loadDocuments]);
+  }, [isLoaded, hasActiveUserSession, loadDocuments]);
 
-  const isContentTooLong = content.length > MAX_CONTENT_LENGTH;
-  const isEditing = activeAction.kind === "editing";
+  const isEditing = editorDocument !== null;
   const isMutating = submitting || activeAction.kind === "deleting";
-  const isSubmitDisabled =
-    !isLoaded ||
-    !isSignedIn ||
-    isMutating ||
-    title.trim().length === 0 ||
-    content.trim().length === 0 ||
-    isContentTooLong;
-
   const clearEditor = () => {
-    setTitle("");
-    setContent("");
-    setMode("compose");
-    setActiveAction({ kind: "none" });
+    setEditorDocument(null);
     setError(null);
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (isSubmitDisabled) {
-      if (!isSignedIn) {
-        setError(isEditing ? "Please sign in to update documents." : "Please sign in to create documents.");
-      }
-
-      return;
-    }
-
+  const handleSubmitDocument = async (
+    payload: CreateDocumentPayload,
+    documentId?: string,
+  ) => {
     setSubmitting(true);
     setError(null);
-    const normalizedTitle = title.trim();
-    const normalizedContent = content.trim();
 
     try {
-      if (isEditing && activeAction.kind === "editing") {
-        const updated = await updateDocument(activeAction.documentId, {
-          title: normalizedTitle,
-          content: normalizedContent,
-        });
-
+      if (documentId) {
+        const updated = await updateDocument(documentId, payload);
         setDocuments((previous) =>
           previous.map((document) => (document.id === updated.id ? updated : document)),
         );
-      } else {
-        const created = await createDocument({
-          title: normalizedTitle,
-          content: normalizedContent,
-        });
-
-        setDocuments((previous) => [created, ...previous]);
+        clearEditor();
+        return true;
       }
 
+      const created = await createDocument(payload);
+      setDocuments((previous) => [created, ...previous]);
       clearEditor();
+      return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Failed to ${isEditing ? "update" : "create"} document`);
+      setError(err instanceof Error ? err.message : `Failed to ${documentId ? "update" : "create"} document`);
+      return false;
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleEdit = (document: Document) => {
-    const latest = document.latestRevision;
-
     if (isMutating) {
       return;
     }
 
-    setActiveAction({ kind: "editing", documentId: document.id });
-    setTitle(latest?.title ?? "");
-    setContent(latest?.content ?? "");
-    setMode("compose");
+    setEditorDocument(document);
     setError(null);
-
-    editorRef.current?.focus();
   };
 
   const handleCancelEdit = () => {
@@ -162,7 +105,7 @@ export default function DocumentsPage() {
       return;
     }
 
-    if (!isSignedIn) {
+    if (!hasActiveUserSession) {
       setError("Please sign in to delete documents.");
       return;
     }
@@ -172,6 +115,9 @@ export default function DocumentsPage() {
 
     try {
       await deleteDocument(documentId);
+      if (editorDocument?.id === documentId) {
+        clearEditor();
+      }
       setDocuments((previous) => previous.filter((document) => document.id !== documentId));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete document");
@@ -195,91 +141,15 @@ export default function DocumentsPage() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          <div className="inline-flex rounded border border-[var(--app-border)] p-1">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={mode === "compose" ? "default" : "outline"}
-                  onClick={() => setMode("compose")}
-                >
-                  Compose
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={mode === "preview" ? "default" : "outline"}
-                  onClick={() => setMode("preview")}
-                  className="ml-2"
-                >
-                  Preview
-                </Button>
-          </div>
-
-          {mode === "compose" ? (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                  required
-                  maxLength={140}
-                  placeholder="Write a title for your document"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="content">Content</Label>
-                <Textarea
-                  id="content"
-                  ref={editorRef}
-                  value={content}
-                  onChange={(event) => setContent(event.target.value)}
-                  required
-                  placeholder="Write markdown content."
-                  rows={10}
-                  className="font-mono text-sm"
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-[var(--app-muted)]">Character count</p>
-                <p
-                  className={`text-xs ${isContentTooLong ? "text-red-400" : "text-[var(--app-muted)]"}`}
-                >
-                  {content.length}/{MAX_CONTENT_LENGTH}
-                </p>
-              </div>
-
-                <Button type="submit" disabled={isSubmitDisabled}>
-                  {isEditing
-                    ? submitting
-                      ? "Updating..."
-                      : "Update Document"
-                      : submitting
-                        ? "Creating..."
-                        : "Create Document"}
-                </Button>
-              {isEditing ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={submitting}
-                  onClick={handleCancelEdit}
-                >
-                  Cancel Edit
-                </Button>
-              ) : null}
-            </form>
-          ) : (
-            <div className="space-y-3 rounded-md border border-[var(--app-border)] p-4">
-              <h2 className="text-lg font-semibold">{title.trim() || "Untitled Draft"}</h2>
-              <MarkdownPreview content={content.trim() || "Nothing to preview yet."} className="text-sm" />
-            </div>
-          )}
-
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
+          <DocumentEditor
+            canSubmit={isLoaded && hasActiveUserSession}
+            isBusy={isMutating}
+            isSubmitting={submitting}
+            editorDocument={editorDocument}
+            error={error}
+            onSubmitDocument={handleSubmitDocument}
+            onCancelEdit={handleCancelEdit}
+          />
         </CardContent>
       </Card>
 
@@ -288,9 +158,9 @@ export default function DocumentsPage() {
           My Documents
         </h2>
 
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {error && !isEditing ? <p className="text-sm text-red-600">{error}</p> : null}
         {!isLoaded ? <p className="text-sm text-[var(--app-muted)]">Checking authentication…</p> : null}
-        {isLoaded && !isSignedIn ? (
+        {isLoaded && !hasActiveUserSession ? (
           <p className="text-sm text-[var(--app-muted)]">Sign in to view and manage your documents.</p>
         ) : loading ? (
           <p className="text-sm text-[var(--app-muted)]">Loading documents...</p>
@@ -299,51 +169,16 @@ export default function DocumentsPage() {
         ) : (
           <ul className="space-y-3">
             {documents.map((document) => {
-              const updated = new Date(document.updatedAt);
-              const preview = document.latestRevision?.content ?? "";
-              const fallback = plainTextSummary(preview, 190);
-              const documentTitle = document.latestRevision?.title ?? "Untitled";
-
+              const isDeleting = activeAction.kind === "deleting" && activeAction.documentId === document.id;
               return (
-                <li key={document.id}>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <p className="text-lg font-medium">{documentTitle}</p>
-                        <div className="flex gap-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            disabled={isMutating}
-                            onClick={() => handleEdit(document)}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            disabled={isMutating}
-                            className="border-red-600/70 text-red-300 hover:border-red-500 hover:bg-red-600/15"
-                            onClick={() => handleDelete(document.id)}
-                          >
-                            {activeAction.kind === "deleting" && activeAction.documentId === document.id
-                              ? "Deleting..."
-                              : "Delete"}
-                          </Button>
-                        </div>
-                      </div>
-                      <p className="mt-1 text-sm text-[var(--app-muted)]">
-                        Updated {updated.toLocaleString()} • Revision {document.latestRevision?.revisionNumber ?? 0}
-                      </p>
-                      <p className="mt-1 text-xs text-[var(--app-muted)]">ID: {document.id}</p>
-                      <div className="mt-3">
-                        <MarkdownPreview content={preview} clampLines={4} fallback={fallback} />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </li>
+                <DocumentCard
+                  key={document.id}
+                  document={document}
+                  isMutating={isMutating}
+                  isDeleting={isDeleting}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
               );
             })}
           </ul>
