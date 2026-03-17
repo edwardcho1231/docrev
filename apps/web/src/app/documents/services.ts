@@ -2,6 +2,7 @@ import {
   type CreateDocumentPayload,
   type DocumentsResponse,
   type Document,
+  type RevisionsResponse,
   type UpdateDocumentPayload,
 } from "./types";
 
@@ -67,4 +68,15 @@ export async function deleteDocument(documentId: string): Promise<void> {
   return requestWithApi<void>(`documents/${encodeURIComponent(documentId)}`, {
     method: "DELETE",
   });
+}
+
+export async function fetchDocumentRevisions(documentId: string): Promise<RevisionsResponse["revisions"]> {
+  const payload = await requestWithApi<RevisionsResponse>(
+    `revisions?documentId=${encodeURIComponent(documentId)}`,
+    {
+      method: "GET",
+    },
+  );
+
+  return payload.revisions;
 }
