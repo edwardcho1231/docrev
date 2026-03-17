@@ -7,18 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MarkdownPreview } from "./markdown-preview";
 
-type EditorMode = "compose" | "preview";
-
 type DocumentEditorUIProps = {
   title: string;
   content: string;
-  mode: EditorMode;
   isEditing: boolean;
   isBusy: boolean;
   isSubmitDisabled: boolean;
   submitting: boolean;
   error: string | null;
-  onModeChange: (mode: EditorMode) => void;
   onTitleChange: (value: string) => void;
   onContentChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
@@ -31,13 +27,11 @@ type DocumentEditorUIProps = {
 export function DocumentEditorUI({
   title,
   content,
-  mode,
   isEditing,
   isBusy,
   isSubmitDisabled,
   submitting,
   error,
-  onModeChange,
   onTitleChange,
   onContentChange,
   onSubmit,
@@ -49,29 +43,9 @@ export function DocumentEditorUI({
   const isContentTooLong = content.length > maxLength;
 
   return (
-    <>
-      <div className="inline-flex rounded border border-[var(--app-border)] p-1">
-        <Button
-          type="button"
-          size="sm"
-          variant={mode === "compose" ? "default" : "outline"}
-          onClick={() => onModeChange("compose")}
-        >
-          Compose
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={mode === "preview" ? "default" : "outline"}
-          onClick={() => onModeChange("preview")}
-          className="ml-2"
-        >
-          Preview
-        </Button>
-      </div>
-
-      {mode === "compose" ? (
-        <form onSubmit={onSubmit} className="space-y-4">
+    <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <form onSubmit={onSubmit} className="space-y-4 rounded-md border border-[var(--app-border)] p-4">
           <div className="space-y-1.5">
             <Label htmlFor="title">Title</Label>
             <Input
@@ -92,7 +66,7 @@ export function DocumentEditorUI({
               onChange={(event) => onContentChange(event.target.value)}
               required
               placeholder="Write markdown content."
-              rows={10}
+              rows={16}
               className="font-mono text-sm"
             />
           </div>
@@ -104,23 +78,32 @@ export function DocumentEditorUI({
             </p>
           </div>
 
-          <Button type="submit" disabled={isSubmitDisabled}>
-            {submitting ? submitBusyText : submitButtonText}
-          </Button>
-          {isEditing && onCancelEdit ? (
-        <Button type="button" variant="outline" disabled={isBusy} onClick={onCancelEdit}>
-              Cancel Edit
+          <div className="flex items-center gap-2">
+            <Button type="submit" disabled={isSubmitDisabled}>
+              {submitting ? submitBusyText : submitButtonText}
             </Button>
-          ) : null}
+            {isEditing && onCancelEdit ? (
+              <Button type="button" variant="outline" disabled={isBusy} onClick={onCancelEdit}>
+                Cancel Edit
+              </Button>
+            ) : null}
+          </div>
         </form>
-      ) : (
-        <div className="space-y-3 rounded-md border border-[var(--app-border)] p-4">
-          <h2 className="text-lg font-semibold">{title.trim() || "Untitled Draft"}</h2>
-          <MarkdownPreview content={content.trim() || "Nothing to preview yet."} className="text-sm" />
+
+        <div className="rounded-md border border-[var(--app-border)] p-4">
+          <h3 className="mb-3 text-sm font-medium text-[var(--app-muted)]">Live Preview</h3>
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold">{title.trim() || "Untitled Draft"}</h2>
+            <MarkdownPreview
+              content={content}
+              fallback="Nothing to preview yet."
+              className="text-sm"
+            />
+          </div>
         </div>
-      )}
+      </div>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
-    </>
+    </div>
   );
 }

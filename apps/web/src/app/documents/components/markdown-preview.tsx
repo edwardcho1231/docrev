@@ -43,6 +43,12 @@ export function MarkdownPreview({
         remarkPlugins={[remarkGfm, remarkBreaks]}
         rehypePlugins={[rehypeSanitize]}
         components={{
+          pre: ({ node: _node, ...props }) => (
+            <pre
+              className="overflow-x-auto rounded-md border border-[var(--app-border)] bg-[var(--app-surface)] p-3 text-sm leading-6 text-[var(--app-foreground)]"
+              {...props}
+            />
+          ),
           h1: ({ node: _node, ...props }) => (
             <h1 className="mt-4 mb-2 text-2xl font-semibold" {...props} />
           ),
@@ -65,8 +71,13 @@ export function MarkdownPreview({
               {...props}
             />
           ),
-          code: ({ node: _node, ...props }) => (
-            <code className="rounded bg-[var(--app-surface)] px-1.5 py-0.5 font-mono text-sm" {...props} />
+          code: ({ node: _node, className, ...props }) => (
+            <code
+              className={`rounded bg-[var(--app-surface)] px-1.5 py-0.5 font-mono text-sm text-[var(--app-foreground)] ${
+                className ?? ""
+              }`}
+              {...props}
+            />
           ),
         }}
       >

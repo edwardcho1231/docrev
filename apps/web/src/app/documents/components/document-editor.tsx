@@ -4,7 +4,6 @@ import { FormEvent, useEffect, useState } from "react";
 import { type CreateDocumentPayload, type Document } from "../types";
 import { DocumentEditorUI } from "./document-editor-ui";
 
-type EditorMode = "compose" | "preview";
 const MAX_CONTENT_LENGTH = 5000;
 
 type DocumentEditorProps = {
@@ -31,7 +30,6 @@ export function DocumentEditor({
 }: DocumentEditorProps) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [mode, setMode] = useState<EditorMode>("compose");
 
   const isEditing = editorDocument !== null;
   const isSubmitDisabled =
@@ -49,8 +47,6 @@ export function DocumentEditor({
       setTitle(editorDocument.latestRevision?.title ?? "");
       setContent(editorDocument.latestRevision?.content ?? "");
     }
-
-    setMode("compose");
   }, [editorDocument?.id]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -75,20 +71,17 @@ export function DocumentEditor({
     }
     setTitle("");
     setContent("");
-    setMode("compose");
   };
 
   return (
     <DocumentEditorUI
       title={title}
       content={content}
-      mode={mode}
       isEditing={isEditing}
       isBusy={isBusy}
       isSubmitDisabled={isSubmitDisabled}
       submitting={isSubmitting}
       error={error}
-      onModeChange={(nextMode) => setMode(nextMode)}
       onTitleChange={setTitle}
       onContentChange={setContent}
       onSubmit={handleSubmit}
