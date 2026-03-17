@@ -5,8 +5,6 @@ import {
   type UpdateDocumentPayload,
 } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-
 type ApiError = {
   error?: {
     message?: string;
@@ -21,9 +19,8 @@ async function readJsonSafely(response: Response): Promise<unknown> {
   }
 }
 
-async function requestWithCredentials<T>(input: string, init: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}/api/v1/${input}`, {
-    credentials: "include",
+async function requestWithApi<T>(input: string, init: RequestInit): Promise<T> {
+  const response = await fetch(`/api/v1/${input}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -42,7 +39,7 @@ async function requestWithCredentials<T>(input: string, init: RequestInit): Prom
 }
 
 export async function fetchDocuments(): Promise<Document[]> {
-  const payload = await requestWithCredentials<DocumentsResponse>("documents", {
+  const payload = await requestWithApi<DocumentsResponse>("documents", {
     method: "GET",
   });
 
@@ -50,7 +47,7 @@ export async function fetchDocuments(): Promise<Document[]> {
 }
 
 export async function createDocument(payload: CreateDocumentPayload): Promise<Document> {
-  return requestWithCredentials<Document>("documents", {
+  return requestWithApi<Document>("documents", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -60,14 +57,14 @@ export async function updateDocument(
   documentId: string,
   payload: UpdateDocumentPayload,
 ): Promise<Document> {
-  return requestWithCredentials<Document>(`documents/${encodeURIComponent(documentId)}`, {
+  return requestWithApi<Document>(`documents/${encodeURIComponent(documentId)}`, {
     method: "PUT",
     body: JSON.stringify(payload),
   });
 }
 
 export async function deleteDocument(documentId: string): Promise<void> {
-  return requestWithCredentials<void>(`documents/${encodeURIComponent(documentId)}`, {
+  return requestWithApi<void>(`documents/${encodeURIComponent(documentId)}`, {
     method: "DELETE",
   });
 }

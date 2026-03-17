@@ -11,6 +11,7 @@
   "dependencies": {
     "@clerk/nextjs": "^6.39.0",
     "@radix-ui/colors": "^3.0.0",
+    "@repo/db": "workspace:^",
     "@repo/types": "workspace:^",
     "next": "16.1.6",
     "@tailwindcss/typography": "^0.5.16",
@@ -19,7 +20,8 @@
     "react-dom": "19.2.3",
     "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.0",
-    "rehype-sanitize": "^6.0.0"
+    "rehype-sanitize": "^6.0.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

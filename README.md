@@ -32,8 +32,7 @@ Visitors can create accounts to explore the editor and document workflows.
 ## Repo Setup
 
 DocRev is a Turborepo with:
-- `apps/web`: Next.js + Clerk UI app
-- `apps/api`: Express API with Clerk auth middleware
+- `apps/web`: Next.js + Clerk UI app (primary API + UI)
 - `packages/db`: Prisma schema/client package for Postgres
 - `packages/types`: shared types package scaffold
 
@@ -41,15 +40,13 @@ DocRev is a Turborepo with:
 
 - Node.js + pnpm workspaces + Turborepo
 - Next.js 16 / React 19 (`apps/web`)
-- Express 5 (`apps/api`)
-- Clerk (`@clerk/nextjs`, `@clerk/express`)
+- Clerk (`@clerk/nextjs`, API route integration via `@clerk/nextjs/server`)
 - Prisma + Postgres (`packages/db`)
 
 ## Repository Layout
 
 ```text
 apps/
-  api/      Express API (port 3001)
   web/      Next.js app (port 3000)
 packages/
   db/       Prisma schema + Prisma client singleton export
@@ -70,22 +67,11 @@ Create `apps/web/.env`:
 ```env
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxx
 CLERK_SECRET_KEY=sk_test_xxx
-# Optional but currently present in this repo:
-CLERK_PUBLISHABLE_KEY=pk_test_xxx
-```
-
-Create `apps/api/.env`:
-
-```env
-CLERK_PUBLISHABLE_KEY=pk_test_xxx
-CLERK_SECRET_KEY=sk_test_xxx
 DATABASE_URL=postgresql://USER:PASS@HOST:5432/DB_NAME
-PORT=3001
 ```
 
 Important:
-- `apps/web` and `apps/api` must use keys from the same Clerk instance.
-- A malformed `DATABASE_URL` will fail API startup or Prisma queries.
+- A malformed `DATABASE_URL` will fail runtime Prisma queries.
 
 ## Install Dependencies
 
@@ -118,27 +104,22 @@ pnpm --filter @repo/db exec prisma studio
 
 ## Run Locally
 
-Run all apps:
-
-```bash
-pnpm dev
-```
-
-Run apps separately:
+Run the app:
 
 ```bash
 pnpm --filter web dev
-pnpm --filter api dev
 ```
+
+Current API routes are part of `apps/web` (same-origin `http://localhost:3000/api/v1`).
 
 Default URLs:
 - Web: `http://localhost:3000`
-- API: `http://localhost:3001`
-- Health check: `http://localhost:3001/api/v1/health`
+- API (same-origin): `http://localhost:3000/api/v1`
+- Health check: `http://localhost:3000/api/v1/health`
 
 ## API Endpoints
 
-Current API routes in `apps/api/src/routes`:
+Current API routes in `apps/web/src/app/api`:
 
 - `GET /api/v1/health`
   - Public
@@ -154,6 +135,15 @@ Current API routes in `apps/api/src/routes`:
     - `title: string`
     - `content: string`
   - Creates a `Document`, creates initial `Revision`, then updates `latestRevisionId`
+- `PUT /api/v1/documents/:id`
+  - Requires Clerk auth
+  - Body:
+    - `title: string`
+    - `content: string`
+  - Creates a new revision and updates `latestRevisionId`
+- `DELETE /api/v1/documents/:id`
+  - Requires Clerk auth
+  - Deletes the document and all associated revisions for the signed-in owner
 
 ## Testing Authenticated API Calls with curl
 
@@ -167,7 +157,7 @@ await window.Clerk.session.getToken()
 3. Call API quickly (token is short-lived in local dev):
 
 ```bash
-curl -i http://localhost:3001/api/v1/documents \
+curl -i http://localhost:3000/api/v1/documents \
   -H "Authorization: Bearer <TOKEN>" \
   -H "Origin: http://localhost:3000" \
   -H "Referer: http://localhost:3000/" \

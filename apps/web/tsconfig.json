@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@repo/db": ["../packages/db"],
+      "@repo/types": ["../packages/types"]
     }
   },
   "include": [

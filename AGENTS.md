@@ -4,13 +4,11 @@
 This repository is the DocRev monorepo (`/Users/clawed/Documents/coding/docrev`).
 
 - `apps/web`: Next.js app (auth + document UI)
-- `apps/api`: Express API
 - `packages/db`: Prisma schema and DB client package
 - `packages/types`: shared types package
 
 ## Runtime & Local Development Context
 - `apps/web` typically runs on `http://localhost:3000`
-- `apps/api` runs on `http://localhost:3001`
 - API routes that fetch or mutate documents are Clerk-authenticated.
 
 ## General Working Rules
@@ -31,7 +29,6 @@ This repository is the DocRev monorepo (`/Users/clawed/Documents/coding/docrev`)
 - Install deps: `pnpm install`
 - Run all apps: `pnpm dev`
 - Run web only: `pnpm --filter web dev`
-- Run api only: `pnpm --filter api dev`
 - Prisma setup:
   - `pnpm --filter @repo/db exec prisma generate`
   - `pnpm --filter @repo/db exec prisma migrate deploy`
