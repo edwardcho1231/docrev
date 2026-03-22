@@ -1,5 +1,5 @@
 {
-  "name": "docrev",
+  "name": "edwardcho.dev",
   "private": true,
   "scripts": {
     "build": "turbo run build",

@@ -58,7 +58,7 @@ export default function Home() {
           Project Snapshot
         </p>
         <h2 className="mt-3 text-2xl font-semibold">
-          DocRev is a portfolio product and engineering sandbox.
+          edwardcho.dev is a portfolio product and engineering sandbox.
         </h2>
         <p className="mt-3 max-w-2xl text-base leading-7 text-[var(--app-muted)]">
           It demonstrates auth-gated workflows, markdown rendering, and API-backed
@@ -66,7 +66,7 @@ export default function Home() {
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
-            href="/project/docrev"
+            href="/project/edwardcho.dev"
             className="inline-flex rounded border border-[var(--app-border)] bg-white px-4 py-2 text-sm font-semibold uppercase tracking-[0.14em] text-[var(--app-foreground)] transition-colors hover:border-[var(--app-link-hover)] hover:text-[var(--app-link-hover)]"
           >
             Project details

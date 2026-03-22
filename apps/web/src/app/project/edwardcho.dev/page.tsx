@@ -1,16 +1,16 @@
 import Link from "next/link";
 
-export default function ProjectDocRevPage() {
+export default function ProjectEdwardChoDevPage() {
   return (
     <main className="mx-auto min-h-[calc(100vh-4.2rem)] max-w-3xl px-6 py-16">
       <p className="text-xs font-medium tracking-[0.28em] text-[var(--app-muted)] uppercase">
         Project
       </p>
       <h1 className="mt-3 text-4xl font-semibold">
-        DocRev: Personal Portfolio + Editorial Sandbox
+        edwardcho.dev: Personal Portfolio + Editorial Sandbox
       </h1>
       <p className="mt-4 max-w-2xl text-base leading-7 text-[var(--app-muted)]">
-        DocRev is a private-first editorial CMS sandbox for practicing and
+        edwardcho.dev is a private-first editorial CMS sandbox for practicing and
         extending the document systems I work on professionally, with selective
         public publishing planned for the next milestone.
       </p>
@@ -54,8 +54,8 @@ export default function ProjectDocRevPage() {
             <span className="text-[var(--app-foreground)] font-semibold">
               API and persistence
             </span>{" "}
-            built on an Express service with route-level auth and a Prisma/PostgreSQL
-            data layer, plus Zod request validation.
+            built with Next.js Route Handlers (`/api/v1/*`) with Clerk-backed auth,
+            Prisma/PostgreSQL persistence, and Zod request validation.
           </li>
         </ul>
       </section>

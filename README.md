@@ -1,12 +1,12 @@
 🚧 **Status: Work in Progress**
 
-# DocRev
+# edwardcho.dev
 
-DocRev is an experimental editorial platform built with **React, Next.js, and TypeScript** that explores document editing and revision workflows similar to modern editorial CMS systems.
+edwardcho.dev is an experimental editorial platform built with **React, Next.js, and TypeScript** that explores document editing and revision workflows similar to modern editorial CMS systems.
 
 The project is inspired by the CMS tooling I’ve worked on professionally and is used both as a technical experiment and as the publishing system for my personal blog. Authenticated users can create and edit documents, while published documents will power the site's blog.
 
-The goal of DocRev is to explore how document editing, revision, and publishing workflows can be implemented in a modern full-stack TypeScript application.
+The goal of edwardcho.dev is to explore how document editing, revision, and publishing workflows can be implemented in a modern full-stack TypeScript application.
 
 Visitors can create accounts to explore the editor and document workflows.
 
@@ -31,7 +31,7 @@ Visitors can create accounts to explore the editor and document workflows.
 
 ## Repo Setup
 
-DocRev is a Turborepo with:
+edwardcho.dev is a Turborepo with:
 - `apps/web`: Next.js + Clerk UI app (primary API + UI)
 - `packages/db`: Prisma schema/client package for Postgres
 - `packages/types`: shared types package scaffold

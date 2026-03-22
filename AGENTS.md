@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project Purpose
-This repository is the DocRev monorepo (`/Users/clawed/Documents/coding/docrev`).
+This repository is the edwardcho.dev monorepo.
 
 - `apps/web`: Next.js app (auth + document UI)
 - `packages/db`: Prisma schema and DB client package
