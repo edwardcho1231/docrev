@@ -1,36 +1,110 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# web
 
-## Getting Started
+Next.js app for edwardcho.dev UI and API route handlers.
 
-First, run the development server:
+For full project setup, read the repo root README first.
+For database-specific setup, read `../../packages/db/README.md`.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Scope
+
+- Public portfolio pages
+- Auth-gated documents workspace
+- API routes under `src/app/api/v1` (same origin)
+
+## Required environment variables
+
+Set in `apps/web/.env` for local development:
+
+```env
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxx
+CLERK_SECRET_KEY=sk_test_xxx
+DATABASE_URL=postgresql://USER:PASS@HOST:5432/DB_NAME
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Important:
+- A malformed `DATABASE_URL` will fail runtime Prisma queries.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Run
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+From repo root:
 
-## Learn More
+```bash
+pnpm --filter web dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Default URL: `http://localhost:3000`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Default API URLs:
+- API base: `http://localhost:3000/api/v1`
+- Health check: `http://localhost:3000/api/v1/health`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## API Endpoints
 
-## Deploy on Vercel
+Current API routes in `src/app/api/v1`:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `GET /api/v1/health`
+  - Public
+  - Returns `{ "status": "ok" }`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `GET /api/v1/documents`
+  - Requires Clerk auth
+  - Returns current user id and document list (including `latestRevision`)
+
+- `POST /api/v1/documents`
+  - Requires Clerk auth
+  - Body:
+    - `title: string`
+    - `content: string`
+  - Creates a `Document`, creates initial `Revision`, then updates `latestRevisionId`
+
+- `PUT /api/v1/documents/:id`
+  - Requires Clerk auth
+  - Body:
+    - `title: string`
+    - `content: string`
+  - Creates a new revision and updates `latestRevisionId`
+
+- `DELETE /api/v1/documents/:id`
+  - Requires Clerk auth
+  - Deletes the document and all associated revisions for the signed-in owner
+
+- `GET /api/v1/revisions?documentId=<document-uuid>`
+  - Requires Clerk auth
+  - Returns revisions for the document ordered by newest first
+
+## Testing Authenticated API Calls with curl
+
+1. Sign in to the web app.
+2. In browser console, get a fresh token:
+
+```js
+await window.Clerk.session.getToken()
+```
+
+3. Call API quickly (token is short-lived in local dev):
+
+```bash
+curl -i http://localhost:3000/api/v1/documents \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Origin: http://localhost:3000" \
+  -H "Referer: http://localhost:3000/" \
+  -H "Sec-Fetch-Dest: empty" \
+  -H "X-Forwarded-Host: localhost:3000" \
+  -H "X-Forwarded-Proto: http"
+```
+
+## Useful scripts
+
+From repo root:
+
+```bash
+pnpm --filter web lint
+pnpm --filter web test
+pnpm --filter web build
+```
+
+## Deployment notes
+
+- Framework: Next.js
+- Root directory: `apps/web`
+- Keep `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, and `DATABASE_URL` set in deployment environment.
