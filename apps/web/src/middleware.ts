@@ -1,10 +1,11 @@
-import { clerkMiddleware } from '@clerk/nextjs/server';
+import { clerkMiddleware } from "@clerk/nextjs/server";
 
 export default clerkMiddleware();
 
 export const config = {
   matcher: [
-    "/((?!_next|_next/static|_next/image|favicon.ico).*)",
-    "/(api|trpc)(.*)",
+    "/documents/:path*",
+    "/api/v1/documents/:path*",
+    "/api/v1/revisions/:path*",
   ],
 };
