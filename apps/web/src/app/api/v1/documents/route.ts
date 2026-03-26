@@ -1,7 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@repo/db";
+import { prisma, TransactionClient } from "@repo/db";
+import { isPublisher } from "@/lib/publisher-auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -26,7 +27,10 @@ function unauthorizedResponse() {
 function invalidDocumentDataResponse() {
   return NextResponse.json(
     {
-      error: { code: "INVALID_DOCUMENT_DATA", message: "Invalid document data" },
+      error: {
+        code: "INVALID_DOCUMENT_DATA",
+        message: "Invalid document data",
+      },
     },
     { status: 400 },
   );
@@ -57,7 +61,11 @@ export async function GET() {
     orderBy: { updatedAt: "desc" },
   });
 
-  return NextResponse.json({ userId, documents });
+  return NextResponse.json({
+    userId,
+    isPublisher: isPublisher(userId),
+    documents,
+  });
 }
 
 export async function POST(request: Request) {
@@ -84,7 +92,7 @@ export async function POST(request: Request) {
   const { title, content } = parsed.data;
 
   try {
-    const created = await prisma.$transaction(async (tx) => {
+    const created = await prisma.$transaction(async (tx: TransactionClient) => {
       const document = await tx.document.create({
         data: {
           ownerId: userId,
