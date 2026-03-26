@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { AuthNavControls } from "./auth-nav-controls";
 
 type SiteNavProps = {
   showAuthControls?: boolean;
@@ -35,18 +35,7 @@ export function SiteNav({ showAuthControls = false }: SiteNavProps) {
             </Link>
           </div>
           {showAuthControls ? (
-            <>
-              <SignedOut>
-                <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--app-muted)]">
-                  edwardcho.dev
-                </span>
-              </SignedOut>
-              <SignedIn>
-                <div className="flex h-10 items-center">
-                  <UserButton />
-                </div>
-              </SignedIn>
-            </>
+            <AuthNavControls />
           ) : (
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--app-muted)]">
               edwardcho.dev
