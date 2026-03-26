@@ -2,8 +2,8 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { type DocumentDto } from "@/types/documents";
 import { MarkdownPreview } from "./markdown-preview";
-import { type Document } from "../types";
 
 function plainTextSummary(markdown: string, limit = 280) {
   const withMarkdownRemoved = markdown
@@ -21,10 +21,10 @@ function plainTextSummary(markdown: string, limit = 280) {
 }
 
 type DocumentCardProps = {
-  document: Document;
+  document: DocumentDto;
   isMutating: boolean;
   isDeleting: boolean;
-  onEdit: (document: Document) => void;
+  onEdit: (document: DocumentDto) => void;
   onDelete: (documentId: string) => void;
   onOpenRevisions: (documentId: string) => void;
 };

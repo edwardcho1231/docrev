@@ -5,18 +5,18 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { type DocumentRevisionDto } from "@/types/documents";
 import { MarkdownPreview } from "../../components/markdown-preview";
 import { fetchDocumentRevisions } from "../../services";
-import { type Revision } from "../../types";
 
 function RevisionListItem({
   revision,
   isSelected,
   onSelect,
 }: {
-  revision: Revision;
+  revision: DocumentRevisionDto;
   isSelected: boolean;
-  onSelect: (revision: Revision) => void;
+  onSelect: (revision: DocumentRevisionDto) => void;
 }) {
   return (
     <li>
@@ -43,8 +43,8 @@ export default function DocumentRevisionsPage() {
   const documentId = Array.isArray(params.documentId)
     ? params.documentId[0]
     : params.documentId;
-  const [revisions, setRevisions] = useState<Revision[]>([]);
-  const [selectedRevision, setSelectedRevision] = useState<Revision | null>(null);
+  const [revisions, setRevisions] = useState<DocumentRevisionDto[]>([]);
+  const [selectedRevision, setSelectedRevision] = useState<DocumentRevisionDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
