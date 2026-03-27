@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@repo/db";
+import { prisma, TransactionClient } from "@repo/db";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -58,7 +58,10 @@ function internalServerErrorResponse(message = "Internal server error") {
 function invalidDocumentDataResponse() {
   return NextResponse.json(
     {
-      error: { code: "INVALID_DOCUMENT_DATA", message: "Invalid document data" },
+      error: {
+        code: "INVALID_DOCUMENT_DATA",
+        message: "Invalid document data",
+      },
     },
     { status: 400 },
   );
@@ -70,6 +73,18 @@ function notFoundResponse() {
       error: { code: "DOCUMENT_NOT_FOUND", message: "Document not found" },
     },
     { status: 404 },
+  );
+}
+
+function cannotDeletePublishedResponse() {
+  return NextResponse.json(
+    {
+      error: {
+        code: "DOCUMENT_IS_PUBLISHED",
+        message: "Unpublish this document before deleting it",
+      },
+    },
+    { status: 409 },
   );
 }
 
@@ -104,7 +119,7 @@ export async function PUT(request: Request, context: DocumentParams) {
   const { id } = parsedId.data;
 
   try {
-    const updated = await prisma.$transaction(async (tx) => {
+    const updated = await prisma.$transaction(async (tx: TransactionClient) => {
       const document = await tx.document.findFirst({
         where: { id, ownerId: userId },
         include: { latestRevision: true },
@@ -159,9 +174,28 @@ export async function DELETE(_request: Request, context: DocumentParams) {
     return invalidDocumentIdResponse();
   }
 
+  const { id } = parsedId.data;
+
   try {
+    const document = await prisma.document.findFirst({
+      where: { id, ownerId: userId },
+      select: { id: true, status: true },
+    });
+
+    if (!document) {
+      return notFoundResponse();
+    }
+
+    if (document.status === "PUBLISHED") {
+      return cannotDeletePublishedResponse();
+    }
+
     const deleted = await prisma.document.deleteMany({
-      where: { id: parsedId.data.id, ownerId: userId },
+      where: {
+        id: document.id,
+        ownerId: userId,
+        status: "DRAFT",
+      },
     });
 
     if (deleted.count === 0) {
@@ -170,7 +204,7 @@ export async function DELETE(_request: Request, context: DocumentParams) {
 
     return new Response(null, { status: 204 });
   } catch (error) {
-    console.error(`Failed to delete document ${parsedId.data.id}`, error);
+    console.error(`Failed to delete document ${id}`, error);
     return internalServerErrorResponse("Failed to delete document");
   }
 }
