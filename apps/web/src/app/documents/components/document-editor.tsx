@@ -9,7 +9,7 @@ import { type DocumentDto, type DocumentKind } from "@/types/documents";
 import { type CreateDocumentPayload, type PublishDocumentPayload } from "../payload-types";
 import { DocumentEditorUI } from "./document-editor-ui";
 
-const MAX_CONTENT_LENGTH = 5000;
+const MAX_CONTENT_LENGTH = 10000;
 const MAX_EXCERPT_LENGTH = 300;
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
