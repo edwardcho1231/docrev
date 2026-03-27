@@ -2,6 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { type DocumentDto } from "@/types/documents";
 import { MarkdownPreview } from "./markdown-preview";
 
@@ -47,7 +48,14 @@ export function DocumentCard({
       <Card>
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
-            <p className="text-lg font-medium">{documentTitle}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-lg font-medium">{documentTitle}</p>
+              <Badge
+                variant={document.status === "PUBLISHED" ? "success" : "muted"}
+              >
+                {document.status === "PUBLISHED" ? "Published" : "Draft"}
+              </Badge>
+            </div>
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -80,16 +88,22 @@ export function DocumentCard({
             </div>
           </div>
           <p className="mt-1 text-sm text-[var(--app-muted)]">
-            Updated {updated.toLocaleString()} • Revision {document.latestRevision?.revisionNumber ?? 0}
+            Updated {updated.toLocaleString()} • Revision{" "}
+            {document.latestRevision?.revisionNumber ?? 0}
           </p>
           <p className="mt-1 text-xs text-[var(--app-muted)]">
-            Status: {document.status}
-            {document.kind ? ` • ${document.kind}` : ""}
+            {document.kind ? ` ${document.kind}` : ""}
             {document.slug ? ` • /${document.slug}` : ""}
           </p>
-          <p className="mt-1 text-xs text-[var(--app-muted)]">ID: {document.id}</p>
+          <p className="mt-1 text-xs text-[var(--app-muted)]">
+            ID: {document.id}
+          </p>
           <div className="mt-3">
-            <MarkdownPreview content={preview} clampLines={4} fallback={fallback} />
+            <MarkdownPreview
+              content={preview}
+              clampLines={4}
+              fallback={fallback}
+            />
           </div>
         </CardContent>
       </Card>
