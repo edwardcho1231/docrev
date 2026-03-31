@@ -1,8 +1,13 @@
+import { upload } from "@vercel/blob/client";
 import {
   type CreateDocumentPayload,
   type PublishDocumentPayload,
   type UpdateDocumentPayload,
 } from "./payload-types";
+import {
+  buildImageUploadPath,
+  IMAGE_UPLOAD_HANDLE_URL,
+} from "@/lib/image-upload";
 import {
   type DocumentsResponseDto,
   type DocumentDto,
@@ -98,4 +103,35 @@ export async function unpublishDocument(documentId: string): Promise<DocumentDto
   return requestWithApi<DocumentDto>(`documents/${encodeURIComponent(documentId)}/unpublish`, {
     method: "PATCH",
   });
+}
+
+export async function uploadDocumentImage(
+  documentId: string,
+  file: File,
+): Promise<{ url: string; pathname: string }> {
+  const blob = await upload(buildImageUploadPath(documentId, file.name), file, {
+    access: "public",
+    clientPayload: JSON.stringify({
+      documentId,
+      filename: file.name,
+      contentType: file.type,
+      sizeBytes: file.size,
+    }),
+    handleUploadUrl: IMAGE_UPLOAD_HANDLE_URL,
+  });
+
+  await requestWithApi<{ ok: true }>("images/register", {
+    method: "POST",
+    body: JSON.stringify({
+      documentId,
+      url: blob.url,
+      pathname: blob.pathname,
+      filename: file.name,
+    }),
+  });
+
+  return {
+    url: blob.url,
+    pathname: blob.pathname,
+  };
 }

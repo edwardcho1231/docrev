@@ -19,10 +19,12 @@ Set in `apps/web/.env` for local development:
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxx
 CLERK_SECRET_KEY=sk_test_xxx
 DATABASE_URL=postgresql://USER:PASS@HOST:5432/DB_NAME
+BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxx
 ```
 
 Important:
 - A malformed `DATABASE_URL` will fail runtime Prisma queries.
+- `BLOB_READ_WRITE_TOKEN` is required for document image uploads.
 
 ## Run
 

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { upload } from "@vercel/blob/client";
 import {
   createDocument,
   deleteDocument,
@@ -6,8 +7,13 @@ import {
   fetchDocuments,
   publishDocument,
   unpublishDocument,
+  uploadDocumentImage,
   updateDocument,
 } from "./services";
+
+vi.mock("@vercel/blob/client", () => ({
+  upload: vi.fn(),
+}));
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -174,5 +180,37 @@ describe("document services", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(deleteDocument("doc-1")).rejects.toThrow("Request failed with status 500");
+  });
+
+  it("uploadDocumentImage uses blob client upload with document-scoped pathname", async () => {
+    const uploadMock = vi.mocked(upload).mockResolvedValue({
+      url: "https://blob.vercel-storage.com/documents/doc-1/example.png",
+      pathname: "documents/doc-1/example.png",
+    } as Awaited<ReturnType<typeof upload>>);
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const file = new File(["hello"], "Example Image.PNG", { type: "image/png" });
+
+    await expect(uploadDocumentImage("doc-1", file)).resolves.toEqual({
+      url: "https://blob.vercel-storage.com/documents/doc-1/example.png",
+      pathname: "documents/doc-1/example.png",
+    });
+
+    expect(uploadMock).toHaveBeenCalledWith(
+      "documents/doc-1/example-image.png",
+      file,
+      expect.objectContaining({
+        access: "public",
+        handleUploadUrl: "/api/v1/images/upload",
+      }),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/images/register",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({ "Content-Type": "application/json" }),
+      }),
+    );
   });
 });
