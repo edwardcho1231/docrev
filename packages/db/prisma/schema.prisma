@@ -31,6 +31,7 @@ model Document {
   latestRevision   Revision?       @relation("LatestRevision", fields: [id, latestRevisionId], references: [documentId, id])
 
   revisions        Revision[]      @relation("DocumentRevisions")
+  imageAssets      ImageAsset[]
 
   @@index([ownerId])
   @@index([status, kind, publishedAt])
@@ -51,5 +52,22 @@ model Revision {
 
   @@unique([documentId, id])
   @@unique([documentId, revisionNumber])
+  @@index([documentId, createdAt])
+}
+
+model ImageAsset {
+  id          String    @id @default(dbgenerated("gen_random_uuid()::text"))
+  ownerId     String
+  documentId  String?
+  blobUrl     String    @unique
+  pathname    String    @unique
+  filename    String
+  contentType String
+  sizeBytes   Int
+  createdAt   DateTime  @default(now())
+
+  document    Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId, createdAt])
   @@index([documentId, createdAt])
 }
