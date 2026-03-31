@@ -66,8 +66,8 @@ export default function Home() {
         </h2>
         <p className="mt-3 max-w-2xl text-base leading-7 text-[var(--app-muted)]">
           It demonstrates how I design revision-aware content workflows,
-          authenticated editing surfaces, and API-backed publishing systems for
-          public delivery.
+          image-aware markdown editing, authenticated publishing surfaces, and
+          API-backed content systems for public delivery.
         </p>
         <div className="mt-6">
           <Link

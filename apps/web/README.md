@@ -9,6 +9,7 @@ For database-specific setup, read `../../packages/db/README.md`.
 
 - Public portfolio pages
 - Publisher-only documents workspace
+- Vercel Blob-backed document image uploads with markdown rendering
 - API routes under `src/app/api/v1` (same origin)
 
 ## Required environment variables
@@ -25,6 +26,14 @@ BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxx
 Important:
 - A malformed `DATABASE_URL` will fail runtime Prisma queries.
 - `BLOB_READ_WRITE_TOKEN` is required for document image uploads.
+
+## Document Images
+
+- Supported upload types: `image/jpeg`, `image/png`, `image/webp`, `image/gif`, `image/avif`
+- Max upload size: `10 MB`
+- Images can be uploaded only after a document has been created once, because uploads are stored under a document-scoped blob path.
+- Uploading an image inserts standard markdown image syntax into the editor content.
+- Markdown previews and published blog/project pages render uploaded images inline.
 
 ## Run
 
@@ -73,6 +82,15 @@ Current API routes in `src/app/api/v1`:
 - `GET /api/v1/revisions?documentId=<document-uuid>`
   - Requires Clerk auth and publisher access
   - Returns revisions for the document ordered by newest first
+
+- `POST /api/v1/images/upload`
+  - Requires Clerk auth and publisher access
+  - Prepares a Vercel Blob client upload for a document-owned image path
+  - Validates document ownership, content type, and max size before issuing the upload token
+
+- `POST /api/v1/images/register`
+  - Requires Clerk auth and publisher access
+  - Verifies blob metadata and persists the uploaded image asset record for the document
 
 - `GET /api/v1/documents/access`
   - Requires Clerk auth

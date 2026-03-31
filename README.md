@@ -2,7 +2,7 @@
 
 edwardcho.dev is my personal site and publishing platform, built with Next.js, React, TypeScript, Tailwind CSS, Clerk, Prisma, and PostgreSQL.
 
-It showcases my engineering work while also serving as an experimental product inspired by editorial CMS patterns I use in production: publisher-only content workflows, revisioned documents, and API-backed content management.
+It showcases my engineering work while also serving as an experimental product inspired by editorial CMS patterns I use in production: publisher-only content workflows, revisioned documents, document image uploads, and API-backed content management.
 
 Today, the primary workflow is a private, publisher-only document workspace with markdown authoring and revision history. Over time, this repo will also power blog publishing and additional project showcases under the same platform.
 
@@ -18,6 +18,7 @@ Today, the primary workflow is a private, publisher-only document workspace with
 
 - Public personal-site pages alongside a private, publisher-only document workspace
 - Markdown authoring with live preview
+- Document image uploads backed by Vercel Blob and rendered inline in markdown previews
 - Clerk-authenticated routes with publisher-only editor and document API access
 - Prisma/PostgreSQL persistence with revisioned document history
 - Next.js App Router and Route Handler backend patterns
@@ -37,6 +38,8 @@ flowchart TD
   C --> G["GET /api/v1/revisions?documentId=..."]
   C --> H["PATCH /api/v1/documents/:id/publish"]
   C --> I["PATCH /api/v1/documents/:id/unpublish"]
+  C --> N["POST /api/v1/images/upload"]
+  C --> O["POST /api/v1/images/register"]
 
   D --> J["Prisma / PostgreSQL"]
   E --> J
@@ -44,9 +47,12 @@ flowchart TD
   G --> J
   H --> J
   I --> J
+  O --> J
+  N --> P["Vercel Blob"]
 
   J --> K["Document table"]
   J --> L["Revision table"]
+  J --> Q["ImageAsset table"]
 
   E -- "create document + revision 1" --> K
   E -- "create document + revision 1" --> L
@@ -55,9 +61,12 @@ flowchart TD
   G -- "load revision history" --> L
   H -- "publish metadata" --> K
   I -- "set status back to draft" --> K
+  N -- "issue upload token + validate path/type/size" --> P
+  O -- "verify blob metadata + persist image asset" --> Q
 
   K --> M["Public /projects/[slug]"]
   L --> M
+  P --> M
   M -- "read published content via latestRevision" --> A
 ```
 
@@ -86,8 +95,21 @@ erDiagram
     datetime createdAt
   }
 
+  ImageAsset {
+    string id PK
+    string ownerId
+    string documentId FK
+    string blobUrl
+    string pathname
+    string filename
+    string contentType
+    int sizeBytes
+    datetime createdAt
+  }
+
   Document ||--o{ Revision : "has many revisions"
   Document o|--|| Revision : "latestRevisionId points to current revision"
+  Document o|--o{ ImageAsset : "owns uploaded images"
 ```
 
 ## Near-Term Roadmap

@@ -14,7 +14,6 @@ export function DocumentsNavLink() {
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) {
-      setCanAccessDocuments(false);
       return;
     }
 
@@ -52,7 +51,7 @@ export function DocumentsNavLink() {
     };
   }, [isLoaded, isSignedIn]);
 
-  if (!canAccessDocuments) {
+  if (!isLoaded || !isSignedIn || !canAccessDocuments) {
     return null;
   }
 

@@ -95,6 +95,13 @@ export default function ProjectEdwardChoDevPage() {
             editing, making iteration safer and future publishing flows easier
             to support.
           </li>
+          <li>
+            <span className="text-[var(--app-foreground)] font-semibold">
+              Document image uploads
+            </span>{" "}
+            backed by Vercel Blob so drafted and published markdown content can
+            include inline media without hand-managing asset URLs.
+          </li>
         </ul>
       </section>
 
@@ -131,6 +138,14 @@ export default function ProjectEdwardChoDevPage() {
             to enforce consistent mutation contracts and fail fast when requests
             do not match expected input.
           </li>
+          <li>
+            <span className="text-[var(--app-foreground)] font-semibold">
+              Vercel Blob upload flow
+            </span>{" "}
+            to issue document-scoped image uploads, validate ownership and file
+            constraints, and keep markdown rendering aligned across preview and
+            published pages.
+          </li>
         </ul>
       </section>
 
@@ -150,6 +165,10 @@ export default function ProjectEdwardChoDevPage() {
           <li>
             One shared system foundation now supports both portfolio
             presentation and ongoing publishing-workflow experimentation.
+          </li>
+          <li>
+            Image uploads now fit directly into the authoring flow, with
+            uploaded media rendered in live preview and public markdown pages.
           </li>
         </ul>
       </section>
