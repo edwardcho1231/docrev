@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import {
   type CreateDocumentPayload,
   type PublishDocumentPayload,
 } from "../payload-types";
+import { uploadDocumentImage } from "../services";
 import { DocumentEditorUI } from "./document-editor-ui";
 
 const MAX_CONTENT_LENGTH = 10000;
@@ -62,6 +63,7 @@ export function DocumentEditor({
   onUnpublishDocument,
   onCancelEdit,
 }: DocumentEditorProps) {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [title, setTitle] = useState(
     () => editorDocument?.latestRevision?.title ?? "",
   );
@@ -77,6 +79,8 @@ export function DocumentEditor({
       slugify(editorDocument?.latestRevision?.title ?? ""),
   );
   const [excerpt, setExcerpt] = useState(() => editorDocument?.excerpt ?? "");
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const isEditing = editorDocument !== null;
   const normalizedSlug = slug.trim().toLowerCase();
@@ -95,6 +99,8 @@ export function DocumentEditor({
     normalizedSlug.length === 0 ||
     !isSlugValid ||
     normalizedExcerpt.length > MAX_EXCERPT_LENGTH;
+  const canUploadImages = isEditing && !isBusy && !uploadingImage;
+  const combinedError = error ?? uploadError;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -140,18 +146,68 @@ export function DocumentEditor({
     await onUnpublishDocument(editorDocument.id);
   };
 
+  const handleUploadImage = async (file: File) => {
+    if (!editorDocument) {
+      setUploadError("Save the document once before uploading images.");
+      return;
+    }
+
+    setUploadingImage(true);
+    setUploadError(null);
+
+    try {
+      const uploaded = await uploadDocumentImage(editorDocument.id, file);
+      const textarea = textareaRef.current;
+      const currentContent = textarea?.value ?? content;
+      const selectionStart = textarea?.selectionStart ?? currentContent.length;
+      const selectionEnd = textarea?.selectionEnd ?? currentContent.length;
+      const prefix = currentContent.slice(0, selectionStart);
+      const suffix = currentContent.slice(selectionEnd);
+      const needsLeadingSpacing =
+        prefix.length > 0 && !prefix.endsWith("\n") ? "\n\n" : prefix.length > 0 ? "\n" : "";
+      const needsTrailingSpacing =
+        suffix.length > 0 && !suffix.startsWith("\n") ? "\n\n" : suffix.length > 0 ? "\n" : "";
+      const altText = "Alt text";
+      const snippet = `${needsLeadingSpacing}![${altText}](${uploaded.url})${needsTrailingSpacing}`;
+      const nextContent = `${prefix}${snippet}${suffix}`;
+      const altTextStart = prefix.length + needsLeadingSpacing.length + 2;
+      const altTextEnd = altTextStart + altText.length;
+
+      setContent(nextContent);
+
+      requestAnimationFrame(() => {
+        if (!textareaRef.current) {
+          return;
+        }
+
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(altTextStart, altTextEnd);
+      });
+    } catch (uploadErr) {
+      setUploadError(
+        uploadErr instanceof Error ? uploadErr.message : "Failed to upload image",
+      );
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <DocumentEditorUI
+        textareaRef={textareaRef}
         title={title}
         content={content}
         isEditing={isEditing}
         isBusy={isBusy}
         isSubmitDisabled={isSubmitDisabled}
+        canUploadImages={canUploadImages}
+        isUploadingImage={uploadingImage}
         submitting={isSubmitting}
-        error={error}
+        error={combinedError}
         onTitleChange={setTitle}
         onContentChange={setContent}
+        onUploadImage={handleUploadImage}
         onSubmit={handleSubmit}
         onCancelEdit={isEditing ? onCancelEdit : undefined}
         submitButtonText={isEditing ? "Update Document" : "Create Document"}

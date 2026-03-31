@@ -62,6 +62,14 @@ export function MarkdownPreview({
           a: ({ node: _node, ...props }) => (
             <a className="text-[var(--app-link-hover)] underline underline-offset-2" {...props} />
           ),
+          img: ({ node: _node, alt, ...props }) => (
+            <img
+              alt={alt || ""}
+              loading="lazy"
+              className="my-4 h-auto max-w-full rounded-md"
+              {...props}
+            />
+          ),
           ul: ({ node: _node, ...props }) => <ul className="my-3 list-disc pl-6" {...props} />,
           ol: ({ node: _node, ...props }) => <ol className="my-3 list-decimal pl-6" {...props} />,
           li: ({ node: _node, ...props }) => <li className="mt-1" {...props} />,

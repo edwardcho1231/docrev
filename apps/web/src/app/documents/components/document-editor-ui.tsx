@@ -1,22 +1,27 @@
 "use client";
 
-import { type FormEvent } from "react";
+import { type FormEvent, type RefObject, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ALLOWED_IMAGE_CONTENT_TYPES } from "@/lib/image-upload";
 import { MarkdownPreview } from "./markdown-preview";
 
 type DocumentEditorUIProps = {
+  textareaRef: RefObject<HTMLTextAreaElement | null>;
   title: string;
   content: string;
   isEditing: boolean;
   isBusy: boolean;
   isSubmitDisabled: boolean;
+  canUploadImages: boolean;
+  isUploadingImage: boolean;
   submitting: boolean;
   error: string | null;
   onTitleChange: (value: string) => void;
   onContentChange: (value: string) => void;
+  onUploadImage: (file: File) => Promise<void>;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onCancelEdit?: () => void;
   submitButtonText: string;
@@ -25,21 +30,26 @@ type DocumentEditorUIProps = {
 };
 
 export function DocumentEditorUI({
+  textareaRef,
   title,
   content,
   isEditing,
   isBusy,
   isSubmitDisabled,
+  canUploadImages,
+  isUploadingImage,
   submitting,
   error,
   onTitleChange,
   onContentChange,
+  onUploadImage,
   onSubmit,
   onCancelEdit,
   submitButtonText,
   submitBusyText,
   maxLength,
 }: DocumentEditorUIProps) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const isContentTooLong = content.length > maxLength;
 
   return (
@@ -61,6 +71,7 @@ export function DocumentEditorUI({
           <div className="space-y-1.5">
             <Label htmlFor="content">Content</Label>
             <Textarea
+              ref={textareaRef}
               id="content"
               value={content}
               onChange={(event) => onContentChange(event.target.value)}
@@ -82,12 +93,41 @@ export function DocumentEditorUI({
             <Button type="submit" disabled={isSubmitDisabled}>
               {submitting ? submitBusyText : submitButtonText}
             </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={ALLOWED_IMAGE_CONTENT_TYPES.join(",")}
+              className="hidden"
+              onChange={async (event) => {
+                const file = event.target.files?.[0];
+
+                if (!file) {
+                  return;
+                }
+
+                await onUploadImage(file);
+                event.target.value = "";
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!canUploadImages}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {isUploadingImage ? "Uploading..." : "Upload Image"}
+            </Button>
             {isEditing && onCancelEdit ? (
               <Button type="button" variant="outline" disabled={isBusy} onClick={onCancelEdit}>
                 Cancel Edit
               </Button>
             ) : null}
           </div>
+          {!isEditing ? (
+            <p className="text-xs text-[var(--app-muted)]">
+              Save the document once to enable image uploads.
+            </p>
+          ) : null}
         </form>
 
         <div className="rounded-md border border-[var(--app-border)] p-4">
