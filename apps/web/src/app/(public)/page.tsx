@@ -69,12 +69,18 @@ export default function Home() {
           image-aware markdown editing, authenticated publishing surfaces, and
           API-backed content systems for public delivery.
         </p>
-        <div className="mt-6">
+        <div className="mt-6 flex flex-wrap gap-3">
           <Link
             href="/projects/edwardchodev-portfolio"
-            className="inline-flex rounded border border-[var(--app-border)] bg-white px-4 py-2 text-sm font-semibold uppercase tracking-[0.14em] text-[var(--app-foreground)] transition-colors hover:border-[var(--app-link-hover)] hover:text-[var(--app-link-hover)] mr-3 "
+            className="inline-flex rounded border border-[var(--app-border)] bg-white px-4 py-2 text-sm font-semibold uppercase tracking-[0.14em] text-[var(--app-foreground)] transition-colors hover:border-[var(--app-link-hover)] hover:text-[var(--app-link-hover)]"
           >
             Read Case Study
+          </Link>
+          <Link
+            href="/demo/editor"
+            className="inline-flex rounded border border-[var(--app-border)] px-4 py-2 text-sm font-medium uppercase tracking-[0.14em] text-[var(--app-muted)] transition-colors hover:border-[var(--app-link-hover)] hover:text-[var(--app-foreground)]"
+          >
+            Try Public Demo
           </Link>
         </div>
       </section>
