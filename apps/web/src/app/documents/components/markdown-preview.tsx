@@ -21,7 +21,11 @@ const markdownSanitizeSchema = {
   },
 };
 
-function markdownUrlTransform(url: string, key: string, node: { tagName?: string }) {
+function markdownUrlTransform(
+  url: string,
+  key: string,
+  node: { tagName?: string },
+) {
   if (key === "src" && node.tagName === "img" && /^blob:/i.test(url)) {
     return url;
   }
@@ -38,21 +42,23 @@ export function MarkdownPreview({
   const normalized = content?.trim() ?? "";
   const fallbackText = fallback?.trim() || "No content";
   const maxHeight = clampLines
-    ? {
+    ? ({
         maxHeight: `${clampLines * 1.25}rem`,
         overflow: "hidden",
-      } as CSSProperties
+      } as CSSProperties)
     : undefined;
 
   if (!normalized) {
     return (
-      <p className={`text-sm text-[var(--app-muted)] ${className}`}>{fallbackText}</p>
+      <p className={`text-sm text-[var(--app-muted)] ${className}`}>
+        {fallbackText}
+      </p>
     );
   }
 
   return (
     <div
-      className={`markdown-preview prose prose-sm max-w-none ${className}`}
+      className={`markdown-preview prose prose-sm max-w-none prose-code:before:content-none prose-code:after:content-none ${className}`}
       style={maxHeight}
     >
       <ReactMarkdown
@@ -62,7 +68,7 @@ export function MarkdownPreview({
         components={{
           pre: ({ node: _node, ...props }) => (
             <pre
-              className="overflow-x-auto rounded-md border border-[var(--app-border)] bg-[var(--app-surface)] p-3 text-sm leading-6 text-[var(--app-foreground)]"
+              className="overflow-x-auto rounded-md bg-[var(--app-surface-alt)] p-3 text-sm leading-6 text-[var(--app-foreground)]"
               {...props}
             />
           ),
@@ -75,9 +81,14 @@ export function MarkdownPreview({
           h3: ({ node: _node, ...props }) => (
             <h3 className="mt-3 mb-1.5 text-lg font-semibold" {...props} />
           ),
-          p: ({ node: _node, ...props }) => <p className="mt-2 leading-7" {...props} />,
+          p: ({ node: _node, ...props }) => (
+            <p className="mt-2 leading-7" {...props} />
+          ),
           a: ({ node: _node, ...props }) => (
-            <a className="text-[var(--app-link-hover)] underline underline-offset-2" {...props} />
+            <a
+              className="text-[var(--app-link-hover)] underline underline-offset-2"
+              {...props}
+            />
           ),
           img: ({ node: _node, alt, ...props }) => (
             <img
@@ -87,8 +98,12 @@ export function MarkdownPreview({
               {...props}
             />
           ),
-          ul: ({ node: _node, ...props }) => <ul className="my-3 list-disc pl-6" {...props} />,
-          ol: ({ node: _node, ...props }) => <ol className="my-3 list-decimal pl-6" {...props} />,
+          ul: ({ node: _node, ...props }) => (
+            <ul className="my-3 list-disc pl-6" {...props} />
+          ),
+          ol: ({ node: _node, ...props }) => (
+            <ol className="my-3 list-decimal pl-6" {...props} />
+          ),
           li: ({ node: _node, ...props }) => <li className="mt-1" {...props} />,
           blockquote: ({ node: _node, ...props }) => (
             <blockquote
@@ -98,7 +113,7 @@ export function MarkdownPreview({
           ),
           code: ({ node: _node, className, ...props }) => (
             <code
-              className={`rounded bg-[var(--app-surface)] px-1.5 py-0.5 font-mono text-sm text-[var(--app-foreground)] ${
+              className={`rounded bg-[var(--app-surface-alt)] px-1.5 py-0.5 font-mono text-sm text-[var(--app-foreground)] ${
                 className ?? ""
               }`}
               {...props}
