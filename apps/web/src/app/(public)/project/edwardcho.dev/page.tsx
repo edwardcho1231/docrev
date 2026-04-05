@@ -182,6 +182,10 @@ export default function ProjectEdwardChoDevPage() {
             overwrite-only content updates.
           </li>
           <li>
+            Revision comparison v1 now supports comparing the selected revision
+            against older saved versions for faster editorial review.
+          </li>
+          <li>
             One shared system foundation now supports both portfolio
             presentation and ongoing publishing-workflow experimentation.
           </li>
@@ -206,8 +210,8 @@ export default function ProjectEdwardChoDevPage() {
             shared content model.
           </li>
           <li>
-            Improve revision tooling with comparison-focused views for faster
-            editorial review.
+            Deepen revision comparison tooling with clearer diff workflows and
+            faster editorial review.
           </li>
         </ol>
       </section>

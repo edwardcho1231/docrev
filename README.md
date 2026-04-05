@@ -18,6 +18,7 @@ Today, the primary workflow is a private, publisher-only document workspace with
 
 - Public personal-site pages alongside a private, publisher-only document workspace
 - Markdown authoring with live preview
+- Revision comparison v1 for comparing the selected revision against older saved revisions
 - Document image uploads backed by Vercel Blob and rendered inline in markdown previews
 - Clerk-authenticated routes with publisher-only editor and document API access
 - Prisma/PostgreSQL persistence with revisioned document history
@@ -116,7 +117,7 @@ erDiagram
 
 - Draft-to-published workflow for turning editor documents into blog posts
 - Public blog routes generated from published entries
-- Revision comparison, visual diffing, and revert support
+- Richer revision comparison, visual diffing polish, and revert support
 - Search across drafts and published content
 - Additional project showcases integrated into the personal site
 
