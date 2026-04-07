@@ -6,6 +6,7 @@ import {
   internalServerErrorResponse,
   unauthorizedResponse,
 } from "../../responses";
+import { revalidateDocumentPaths } from "@/lib/revalidate-path";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -133,6 +134,9 @@ export async function PUT(request: Request, context: DocumentParams) {
     if (!updated) {
       return notFoundResponse();
     }
+    if (updated?.kind && updated?.slug && updated.status === "PUBLISHED") {
+      revalidateDocumentPaths({ kind: updated.kind, slug: updated.slug });
+    }
 
     return NextResponse.json(updated);
   } catch (error) {
@@ -159,7 +163,7 @@ export async function DELETE(_request: Request, context: DocumentParams) {
   try {
     const document = await prisma.document.findFirst({
       where: { id, ownerId: userId },
-      select: { id: true, status: true },
+      select: { id: true, status: true, kind: true, slug: true },
     });
 
     if (!document) {

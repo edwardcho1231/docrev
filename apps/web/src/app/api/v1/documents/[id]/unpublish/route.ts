@@ -8,6 +8,7 @@ import {
   internalServerErrorResponse,
   unauthorizedResponse,
 } from "../../../responses";
+import { revalidateDocumentPaths } from "@/lib/revalidate-path";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -74,6 +75,10 @@ export async function PATCH(_request: Request, context: DocumentParams) {
       data: { status: "DRAFT" },
       include: { latestRevision: true },
     });
+
+    if (document?.kind && document.slug) {
+      revalidateDocumentPaths({ kind: document.kind, slug: document.slug });
+    }
 
     return NextResponse.json(updated);
   } catch (error) {

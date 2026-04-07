@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { revalidateDocumentPaths } from "@/lib/revalidate-path";
 import { z } from "zod";
 import { prisma, TransactionClient } from "@repo/db";
 import { isPublisher } from "@/lib/publisher-auth";
@@ -153,7 +154,14 @@ export async function PATCH(request: Request, context: DocumentParams) {
         include: { latestRevision: true },
       });
 
-      return { type: "ok", document: updated } as const;
+      return {
+        type: "ok",
+        document: updated,
+        previousPublicRef:
+          document.kind && document.slug
+            ? { kind: document.kind, slug: document.slug }
+            : null,
+      } as const;
     });
 
     if (result.type === "not-found") {
@@ -163,6 +171,14 @@ export async function PATCH(request: Request, context: DocumentParams) {
     if (result.type === "slug-conflict") {
       return slugConflictResponse();
     }
+
+    revalidateDocumentPaths(
+      {
+        kind,
+        slug,
+      },
+      result.previousPublicRef,
+    );
 
     return NextResponse.json(result.document);
   } catch (error) {
