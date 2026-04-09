@@ -93,21 +93,20 @@ export function DocumentWorkspaceShell({
       if (documentId) {
         const updated = await adapter.updateDocument(documentId, payload);
         syncDocument(updated);
-        clearEditor();
-        return true;
+        return updated;
       }
 
       const created = await adapter.createDocument(payload);
       setDocuments((previous) => [created, ...previous]);
-      clearEditor();
-      return true;
+      setEditorDocument(created);
+      return created;
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
           : `Failed to ${documentId ? "update" : "create"} document`,
       );
-      return false;
+      return null;
     } finally {
       setSubmitting(false);
     }
@@ -115,6 +114,10 @@ export function DocumentWorkspaceShell({
 
   const handleEdit = (document: DocumentDto) => {
     if (isMutating) {
+      return;
+    }
+
+    if (editorDocument?.id === document.id) {
       return;
     }
 
@@ -150,7 +153,7 @@ export function DocumentWorkspaceShell({
     payload: PublishDocumentPayload,
   ) => {
     if (isMutating) {
-      return false;
+      return null;
     }
 
     setActiveAction({ kind: ACTIVE_ACTION_KIND.PUBLISHING, documentId });
@@ -159,10 +162,10 @@ export function DocumentWorkspaceShell({
     try {
       const updated = await adapter.publishDocument(documentId, payload);
       syncDocument(updated);
-      return true;
+      return updated;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to publish document");
-      return false;
+      return null;
     } finally {
       setActiveAction({ kind: ACTIVE_ACTION_KIND.NONE });
     }
@@ -170,7 +173,7 @@ export function DocumentWorkspaceShell({
 
   const handleUnpublish = async (documentId: string) => {
     if (isMutating) {
-      return false;
+      return null;
     }
 
     setActiveAction({ kind: ACTIVE_ACTION_KIND.UNPUBLISHING, documentId });
@@ -179,10 +182,10 @@ export function DocumentWorkspaceShell({
     try {
       const updated = await adapter.unpublishDocument(documentId);
       syncDocument(updated);
-      return true;
+      return updated;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to unpublish document");
-      return false;
+      return null;
     } finally {
       setActiveAction({ kind: ACTIVE_ACTION_KIND.NONE });
     }

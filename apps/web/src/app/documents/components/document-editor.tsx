@@ -11,21 +11,18 @@ import {
   type CreateDocumentPayload,
   type PublishDocumentPayload,
 } from "../payload-types";
+import {
+  MAX_EXCERPT_LENGTH,
+  MAX_SLUG_LENGTH,
+  PUBLISH_SLUG_REGEX,
+  canPublishDocument,
+  createEditorDraftState,
+  getEditorDirtyState,
+  type EditorDraftState,
+} from "../editor-dirty-state";
 import { DocumentEditorUI } from "./document-editor-ui";
 
 const MAX_CONTENT_LENGTH = 10000;
-const MAX_EXCERPT_LENGTH = 300;
-const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-}
 
 type DocumentEditorProps = {
   canSubmit: boolean;
@@ -39,12 +36,12 @@ type DocumentEditorProps = {
   onSubmitDocument: (
     payload: CreateDocumentPayload,
     documentId?: string,
-  ) => Promise<boolean>;
+  ) => Promise<DocumentDto | null>;
   onPublishDocument: (
     documentId: string,
     payload: PublishDocumentPayload,
-  ) => Promise<boolean>;
-  onUnpublishDocument: (documentId: string) => Promise<boolean>;
+  ) => Promise<DocumentDto | null>;
+  onUnpublishDocument: (documentId: string) => Promise<DocumentDto | null>;
   onUploadImage: (
     documentId: string,
     file: File,
@@ -67,42 +64,49 @@ export function DocumentEditor({
   onUploadImage,
   onCancelEdit,
 }: DocumentEditorProps) {
+  const initialDraft = createEditorDraftState(editorDocument);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const [title, setTitle] = useState(
-    () => editorDocument?.latestRevision?.title ?? "",
-  );
-  const [content, setContent] = useState(
-    () => editorDocument?.latestRevision?.content ?? "",
-  );
-  const [kind, setKind] = useState<DocumentKind>(
-    editorDocument?.kind ?? "BLOG",
-  );
-  const [slug, setSlug] = useState(
-    () =>
-      editorDocument?.slug ??
-      slugify(editorDocument?.latestRevision?.title ?? ""),
-  );
-  const [excerpt, setExcerpt] = useState(() => editorDocument?.excerpt ?? "");
+  const [baseline, setBaseline] = useState<EditorDraftState>(initialDraft);
+  const [title, setTitle] = useState(initialDraft.title);
+  const [content, setContent] = useState(initialDraft.content);
+  const [kind, setKind] = useState<DocumentKind>(initialDraft.kind);
+  const [slug, setSlug] = useState(initialDraft.slug);
+  const [excerpt, setExcerpt] = useState(initialDraft.excerpt);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
 
   const isEditing = editorDocument !== null;
-  const normalizedSlug = slug.trim().toLowerCase();
-  const normalizedExcerpt = excerpt.trim();
-  const isSlugValid = SLUG_REGEX.test(normalizedSlug);
+  const { isRevisionDirty, isPublishDirty, normalizedSlug, normalizedExcerpt } =
+    getEditorDirtyState(baseline, {
+      title,
+      content,
+      kind,
+      slug,
+      excerpt,
+    });
+  const isSlugValid = PUBLISH_SLUG_REGEX.test(normalizedSlug);
   const isSubmitDisabled =
     !canSubmit ||
     isBusy ||
+    !isRevisionDirty ||
     title.trim().length === 0 ||
     content.trim().length === 0 ||
     content.length > MAX_CONTENT_LENGTH;
-  const isPublishDisabled =
+  const isPublishDisabled = !canPublishDocument({
+    status: editorDocument?.status ?? "DRAFT",
+    isEditing,
+    isPublisher,
+    isBusy,
+    isRevisionDirty,
+    isPublishDirty,
+    normalizedSlug,
+    normalizedExcerpt,
+  });
+  const isUnpublishDisabled =
     !isEditing ||
     !isPublisher ||
     isBusy ||
-    normalizedSlug.length === 0 ||
-    !isSlugValid ||
-    normalizedExcerpt.length > MAX_EXCERPT_LENGTH;
+    editorDocument.status !== "PUBLISHED";
   const canUploadImages = isEditing && !isBusy && !uploadingImage;
   const combinedError = error ?? uploadError;
 
@@ -115,7 +119,7 @@ export function DocumentEditor({
 
     const normalizedTitle = title.trim();
     const normalizedContent = content.trim();
-    const didSave = await onSubmitDocument(
+    const updated = await onSubmitDocument(
       {
         title: normalizedTitle,
         content: normalizedContent,
@@ -123,11 +127,11 @@ export function DocumentEditor({
       editorDocument?.id,
     );
 
-    if (!didSave) {
+    if (!updated) {
       return;
     }
-    setTitle("");
-    setContent("");
+
+    setBaseline(createEditorDraftState(updated));
   };
 
   const handlePublish = async () => {
@@ -135,11 +139,17 @@ export function DocumentEditor({
       return;
     }
 
-    await onPublishDocument(editorDocument.id, {
+    const updated = await onPublishDocument(editorDocument.id, {
       kind,
       slug: normalizedSlug,
       excerpt: normalizedExcerpt.length > 0 ? normalizedExcerpt : undefined,
     });
+
+    if (!updated) {
+      return;
+    }
+
+    setBaseline(createEditorDraftState(updated));
   };
 
   const handleUnpublish = async () => {
@@ -147,7 +157,13 @@ export function DocumentEditor({
       return;
     }
 
-    await onUnpublishDocument(editorDocument.id);
+    const updated = await onUnpublishDocument(editorDocument.id);
+
+    if (!updated) {
+      return;
+    }
+
+    setBaseline(createEditorDraftState(updated));
   };
 
   const handleUploadImage = async (file: File) => {
@@ -168,9 +184,17 @@ export function DocumentEditor({
       const prefix = currentContent.slice(0, selectionStart);
       const suffix = currentContent.slice(selectionEnd);
       const needsLeadingSpacing =
-        prefix.length > 0 && !prefix.endsWith("\n") ? "\n\n" : prefix.length > 0 ? "\n" : "";
+        prefix.length > 0 && !prefix.endsWith("\n")
+          ? "\n\n"
+          : prefix.length > 0
+            ? "\n"
+            : "";
       const needsTrailingSpacing =
-        suffix.length > 0 && !suffix.startsWith("\n") ? "\n\n" : suffix.length > 0 ? "\n" : "";
+        suffix.length > 0 && !suffix.startsWith("\n")
+          ? "\n\n"
+          : suffix.length > 0
+            ? "\n"
+            : "";
       const altText = "Alt text";
       const snippet = `${needsLeadingSpacing}![${altText}](${uploaded.url})${needsTrailingSpacing}`;
       const nextContent = `${prefix}${snippet}${suffix}`;
@@ -189,7 +213,9 @@ export function DocumentEditor({
       });
     } catch (uploadErr) {
       setUploadError(
-        uploadErr instanceof Error ? uploadErr.message : "Failed to upload image",
+        uploadErr instanceof Error
+          ? uploadErr.message
+          : "Failed to upload image",
       );
     } finally {
       setUploadingImage(false);
@@ -252,12 +278,18 @@ export function DocumentEditor({
               </select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="publish-slug">Slug</Label>
+              <div className="flex justify-between">
+                <Label htmlFor="publish-slug">Slug</Label>
+                <p className="text-xs text-[var(--app-muted)]">
+                  {slug.length}/{MAX_SLUG_LENGTH}
+                </p>
+              </div>
               <Input
                 id="publish-slug"
                 value={slug}
                 onChange={(event) => setSlug(event.target.value.toLowerCase())}
                 placeholder="my-post-slug"
+                maxLength={MAX_SLUG_LENGTH}
                 disabled={isBusy}
               />
               {!isSlugValid && normalizedSlug.length > 0 ? (
@@ -296,11 +328,16 @@ export function DocumentEditor({
               type="button"
               variant="outline"
               onClick={handleUnpublish}
-              disabled={isBusy}
+              disabled={isUnpublishDisabled}
             >
               {isUnpublishing ? "Unpublishing..." : "Unpublish"}
             </Button>
           </div>
+          {isRevisionDirty ? (
+            <p className="text-xs text-[var(--app-muted)]">
+              Save revision changes before publishing.
+            </p>
+          ) : null}
         </section>
       ) : null}
     </div>
