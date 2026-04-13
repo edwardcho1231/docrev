@@ -55,7 +55,10 @@ export function DocumentEditorUI({
   return (
     <div className="space-y-4">
       <div className="grid gap-4 lg:grid-cols-2">
-        <form onSubmit={onSubmit} className="space-y-4 rounded-md border border-[var(--app-border)] p-4">
+        <form
+          onSubmit={onSubmit}
+          className="space-y-4 rounded-md border border-[var(--app-border)] p-4"
+        >
           <div className="space-y-1.5">
             <Label htmlFor="title">Title</Label>
             <Input
@@ -84,7 +87,9 @@ export function DocumentEditorUI({
 
           <div className="flex items-center justify-between">
             <p className="text-xs text-[var(--app-muted)]">Character count</p>
-            <p className={`text-xs ${isContentTooLong ? "text-red-400" : "text-[var(--app-muted)]"}`}>
+            <p
+              className={`text-xs ${isContentTooLong ? "text-red-400" : "text-[var(--app-muted)]"}`}
+            >
               {content.length}/{maxLength}
             </p>
           </div>
@@ -118,7 +123,12 @@ export function DocumentEditorUI({
               {isUploadingImage ? "Uploading..." : "Upload Image"}
             </Button>
             {isEditing && onCancelEdit ? (
-              <Button type="button" variant="outline" disabled={isBusy} onClick={onCancelEdit}>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isBusy}
+                onClick={onCancelEdit}
+              >
                 Cancel Edit
               </Button>
             ) : null}
@@ -130,10 +140,14 @@ export function DocumentEditorUI({
           ) : null}
         </form>
 
-        <div className="rounded-md border border-[var(--app-border)] p-4">
-          <h3 className="mb-3 text-sm font-medium text-[var(--app-muted)]">Live Preview</h3>
+        <div className="rounded-md border border-[var(--app-border)] p-4 min-w-0">
+          <h3 className="mb-3 text-sm font-medium text-[var(--app-muted)]">
+            Live Preview
+          </h3>
           <div className="space-y-3">
-            <h2 className="text-lg font-semibold">{title.trim() || "Untitled Draft"}</h2>
+            <h2 className="text-lg font-semibold min-w-0 break-words">
+              {title.trim() || "Untitled Draft"}
+            </h2>
             <MarkdownPreview
               content={content}
               fallback="Nothing to preview yet."

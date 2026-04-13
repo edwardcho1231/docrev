@@ -49,19 +49,22 @@ export function DocumentCard({
     <li>
       <Card>
         <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <p className="text-lg font-medium">{documentTitle}</p>
+          <div className="flex flex-col gap-2 items-start md:flex-row md:items-center justify-between">
+            <div className="flex w-full gap-2 min-w-0 justify-between items-start md:w-auto md:items-center md:justify-start md:flex-1">
+              <p className="min-w-0 break-words text-lg font-medium">
+                {documentTitle}
+              </p>
               <Badge variant={isPublished ? "success" : "muted"}>
                 {isPublished ? "Published" : "Draft"}
               </Badge>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 justify-between w-full md:w-auto md:shrink-0">
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
                 disabled={isMutating}
+                className="flex-1 md:flex-none md:w-auto"
                 onClick={() => onOpenRevisions(document.id)}
               >
                 Revisions
@@ -71,6 +74,7 @@ export function DocumentCard({
                 size="sm"
                 variant="outline"
                 disabled={isMutating}
+                className="flex-1 md:flex-none md:w-auto"
                 onClick={() => onEdit(document)}
               >
                 Edit
@@ -80,7 +84,7 @@ export function DocumentCard({
                 size="sm"
                 variant="outline"
                 disabled={isDeleteDisabled}
-                className="border-red-600/70 text-red-300 hover:border-red-500 hover:bg-red-600/15"
+                className="border-red-600/70 text-red-300 hover:border-red-500 hover:bg-red-600/15 flex-1 md:flex-none md:w-auto"
                 onClick={() => onDelete(document.id)}
               >
                 {isDeleting ? "Deleting..." : "Delete"}
